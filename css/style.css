@@ -774,6 +774,14 @@ main {
 .square-grid--rows-1 { aspect-ratio: 4 / 1; }
 .square-grid--rows-2 { aspect-ratio: 4 / 2; }
 .square-grid--rows-4 { aspect-ratio: 4 / 4; }
+/* Section 4's grid sits flush against .social-carousel directly below it
+   (see index.html) — squares off just the bottom 2 corners (normally
+   both rounded via the base rule above) so the carousel's OWN
+   bottom-left/right corners are the ones that read as concluding the
+   section, instead of a visible double-rounded seam between the two. */
+.square-grid--flush-bottom {
+  border-radius: 15px 15px 0 0;
+}
 .square {
   /* "Padding" is the term — space inside a box, between its content and
      its own edge (vs. "margin", which is space outside a box, between
@@ -829,11 +837,12 @@ main {
 /* Top+left anchored instead of centered — the square's own existing
    padding (40px, see .square) already reads as "generous, equal
    padding" once content starts from the top-left corner instead of
-   being centered as a block. Used on 2 adjacent squares specifically so
-   their first lines land at the SAME height (both anchored to the same
-   top edge + padding, rather than each being independently vertically
-   centered, which would put their first lines at different heights
-   whenever their content lengths differ). */
+   being centered as a block. Originally used on 2 adjacent squares
+   specifically so their first lines land at the SAME height (both
+   anchored to the same top edge + padding, rather than each being
+   independently vertically centered, which would put their first lines
+   at different heights whenever their content lengths differ) — also
+   reused as-is on section 4 square 3 (same left-align/padding look). */
 .square--content-left {
   align-items: flex-start;
   /* flex-start, not center — center was centering the WHOLE stack
@@ -854,6 +863,14 @@ main {
    inherited flex-start. */
 .square--content-left .diamond-cta {
   align-self: center;
+}
+/* Section 4 square 2 wants the SAME 70px padding as .square--content-left
+   above (matching section 2 squares 6/7) but its text stays centered,
+   not left/top-anchored — a separate modifier rather than reusing
+   .square--content-left wholesale, since that one also brings
+   align-items/justify-content/text-align this square doesn't want. */
+.square--pad-lg {
+  padding: 70px;
 }
 .square--split { justify-content: space-between; }
 
@@ -938,15 +955,25 @@ main {
 }
 .square__script {
   /* Freight (--font-body) is never italic — no italic here (or
-     anywhere else Freight is used; see .feature-banner__subtitle and
-     .publication-card__cover--coming-soon). */
+     anywhere else Freight is used; see
+     .publication-card__cover--coming-soon). .square__handle below is the
+     one deliberate exception — see its own comment for why. */
   font-family: var(--font-body);
   font-size: var(--text-body);
 }
 .square__script--sub { font-size: var(--text-body); }
-.square__script--light { color: var(--color-tan); }
 .square__body { font-size: var(--text-body); flex: 1; }
 .square__body--small { font-size: var(--text-body); }
+/* Section 4 square 2 ("Keep up with the latest!") — same font AND size
+   as section 1's "Read our latest issue!" (.image-mosaic__caption--
+   headline: display italic, 40px), not .square__body's own body size. */
+.square__body--display-italic { font-family: var(--font-display); font-style: italic; font-size: 40px; }
+/* Section 4 square 3's Instagram handle — a deliberate one-off exception
+   to "Freight is never italic" elsewhere on the page (see the comment
+   above .square__script): a real italic face exists for this weight
+   (Freight Text Book Italic, see the @font-face block), so this isn't
+   the browser faux-slanting a face that has none. */
+.square__handle { font-style: italic; }
 .square__footnote {
   align-self: flex-end;
   font-family: var(--font-body);
@@ -1251,18 +1278,6 @@ main {
   animation: hero-asterisk-spin 8s linear infinite;
 }
 
-/* Decorative pattern tile (stand-in for the diamond artwork) */
-.square--pattern-diamond {
-  background: var(--color-red);
-}
-.square--pattern-diamond::before {
-  content: "";
-  position: absolute;
-  inset: 30%;
-  border: 2px solid var(--color-tan);
-  transform: rotate(45deg);
-}
-
 /* Curved along an actual circular arc via SVG textPath (see the HTML) —
    width caps the rendered size. Height/viewBox trimmed to a shallow
    arc (large radius, small rise) rather than a full half-circle — a
@@ -1360,6 +1375,14 @@ a.diamond-cta {
   object-fit: contain;
 }
 .arrow-glyph__hover {
+  /* Same positioning as .arrow-glyph img above — restated here (not
+     merged into that selector) because this class is also used on a
+     plain <div> (see .split-cta__diamond-arrow-cream), which the
+     img-only selector above doesn't match. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }
@@ -1420,10 +1443,11 @@ a.diamond-cta {
    INTERIOR fills solid tan, and the text/arrow switches to a second
    color — never anything outside the 5-color palette. transition on
    both background-color (the fill) and color (the text) for a matched
-   fade. Two color variants exist because the two diamonds on the page
-   want different post-fill text colors (this one "blue" — i.e.
-   --color-grey, the palette's own blue-grey stand-in, no true blue
-   exists — the roles-section one red); the fill itself is identical. */
+   fade. Color variants exist because each diamond on the page wants its
+   own post-fill text color — always the SAME color as the tile it sits
+   on (this one "blue" — i.e. --color-grey, the palette's own blue-grey
+   stand-in, no true blue exists — the roles-section one red, section
+   4's square 7 dark); the fill itself is identical. */
 .diamond-cta--fill-on-hover {
   transition: background-color 0.3s ease-out;
 }
@@ -1438,6 +1462,207 @@ a.diamond-cta {
 }
 .diamond-cta--fill-on-hover--red:hover span {
   color: var(--color-red);
+}
+/* Section 4 square 7 sits on a dark tile (not grey or red), so it gets
+   its own variant — same "post-fill text matches the tile's own bg
+   color" convention as --blue/--red above. Pairs with "Arrow, blue.png"
+   for its hover arrow — despite the filename, that file IS --color-dark
+   (see the .arrow-glyph comment above). */
+.diamond-cta--fill-on-hover--dark:hover span {
+  color: var(--color-dark);
+}
+
+/* ===================================================================
+   Social carousel (section 4) — the viewport itself (.social-carousel)
+   carries the same 4/2 aspect-ratio every other 4-col x 2-row grid in
+   sections 1-3 uses, full width, no side margin/whitespace. 4 slides
+   live in .social-carousel__track (flex row, width 400%, slid via
+   transform: translateX by initSocialCarousel() in main.js, wrapping
+   past the last slide back to the first). The 2 nav buttons are
+   direct children of .social-carousel (siblings of the track, not
+   inside it) so they stay fixed in place, overlaid INSIDE the image at
+   a 24px inset (same convention as .image-mosaic__caption--left/right)
+   rather than sliding with the track or sitting in an outer margin.
+
+   Only the FIRST slide gets the real reveal treatment — the other 3
+   only ever appear via a click, not a scroll-into-view, so there's no
+   "first paint" moment for them to reveal INTO. That first slide is
+   the exact same 2-layer construction as section 1's image-mosaic: ONE
+   shared placeholder "photo" (.social-carousel__photo-placeholder — a
+   single continuous hatch pattern, not 8 independently-hatched tiles
+   that'd seam at every tile edge) behind a 4x2 grid of
+   .social-carousel__mask panels that fade OUT tile-by-tile to reveal
+   it, exactly like .image-mosaic__mask (same inverted opacity: 1 ->
+   .is-visible { opacity: 0 }, staggered by the same generic
+   initRevealOnScroll() system — see its selector list in main.js).
+   initCarouselReveal() in main.js chains masks-done -> scrim.mosaic-
+   reveal -> title/edition/nav-buttons.mosaic-reveal, the same 3-step
+   chain initMosaicReveal() runs for section 1. Slides 2-4 skip the
+   mask/reveal machinery entirely — just the placeholder photo + an
+   always-visible scrim/title/edition, since they're never mid-reveal
+   when the user actually sees them. .social-carousel__scrim is the
+   section 1 mosaic's own .image-mosaic__scrim gradient, just flipped
+   (dark at the TOP, fading down) since the caption sits at the top
+   here instead of the bottom.
+=================================================================== */
+.social-carousel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 15px 15px;
+  aspect-ratio: 4 / 2;
+}
+.social-carousel__track {
+  display: flex;
+  width: 400%;
+  height: 100%;
+  /* cubic-bezier(0.25, 1, 0.5, 1) is this page's own established
+     "entering" ease-out curve (see .square:hover, the diamond-cta
+     fills) — reused here instead of a new curve. */
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.social-carousel__slide {
+  position: relative;
+  /* 1 of 4 slides, each of which is itself 400% of .social-carousel's
+     own width (see .social-carousel__track) — together that's exactly
+     100% of .social-carousel per slide. */
+  flex: 0 0 25%;
+}
+.social-carousel__photo-placeholder {
+  position: absolute;
+  inset: 0;
+  background: var(--color-dark);
+}
+.social-carousel__photo-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(249,245,236,0.06),
+    rgba(249,245,236,0.06) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+.social-carousel__masks {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+/* The opacity/transition/inverted-reveal rules live with
+   .image-mosaic__mask's own (see the "Scroll reveal" section) — this is
+   just the background color. */
+.social-carousel__mask {
+  background: var(--color-cream);
+}
+.social-carousel__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 45%);
+  pointer-events: none;
+}
+/* Same font/size as section 1's "Read our latest issue!"
+   (.image-mosaic__caption--headline) — where each carousel image's own
+   title will go once these are real photos, not placeholders. */
+.social-carousel__title {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  /* Higher than .social-carousel__hover-tiles (z-index:2, below) — same
+     reasoning as .image-mosaic__caption: without this, the hover-tiles
+     layer sits on top and silently swallows the white-wash flash right
+     over the text with nothing visible to show for it there. */
+  z-index: 3;
+  color: var(--color-tan);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 40px;
+  max-width: 70%;
+}
+/* Sits directly beneath the title — same "plain body text/size" freight
+   treatment as .image-mosaic__caption--right ("Edition 2"), just left-
+   aligned under the title instead of pinned to the opposite corner. */
+.social-carousel__edition {
+  position: absolute;
+  /* 24px (top) + the title's own 40px line + a small gap. */
+  top: 74px;
+  left: 24px;
+  z-index: 3;
+  color: var(--color-tan);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+/* Same always-transparent-until-hovered per-cell flash as
+   .image-mosaic__hover-tile — "the carousel is made of tiles/squares,
+   so it should be universally hoverable" the same way every .square and
+   the section 1 mosaic already are. Separate from .social-carousel__mask
+   on purpose: those end at opacity:0 permanently once revealed, so a
+   hover effect added to them would have no visible content to
+   brighten — this is its own layer, on top of everything else in the
+   slide (masks, scrim, photo), same 4x2 grid. */
+.social-carousel__hover-tiles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.social-carousel__hover-tile {
+  background: rgba(255, 255, 255, 0);
+  transition: background-color 0.3s ease-out;
+}
+.social-carousel__hover-tile:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transition: background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+/* Real <button>s (JS-driven, no destination), not <a> —
+   .diamond-cta--tight for the same small icon-only sizing as
+   split-cta's own diamond and section 2 square 7's. Sits ON TOP of the
+   track/masks/scrim (z-index) so it's always clickable regardless of
+   which slide is showing or what's mid-reveal underneath it. */
+.social-carousel__nav {
+  /* The other diamond-cta instances are all <a>/<div> — this is the
+     first real <button>, so it needs its own reset against the
+     browser's native button chrome (background/padding/font), which
+     .diamond-cta itself never had to account for. */
+  appearance: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  margin: 0;
+  /* Must restate rotate(45deg) here, not just translateY(-50%) —
+     transform is a single property, so a 2nd rule setting it without
+     the rotate would silently REPLACE .diamond-cta's own
+     transform:rotate(45deg) instead of composing with it, turning the
+     diamond into a plain square (and, since the arrow-glyph's own
+     -45deg counter-rotation assumes a real 45deg parent to cancel,
+     visibly tilting the arrow too). translateY(-50%) still resolves
+     against this element's own (unrotated) box size first, so
+     centering is unaffected by also rotating. */
+  transform: translateY(-50%) rotate(45deg);
+  /* No border-color override — .diamond-cta's own base border (see
+     above) is already --color-tan, i.e. beige, which is what's wanted
+     here. */
+  cursor: pointer;
+}
+/* .diamond-cta > .arrow-glyph (see above) already provides the
+   counter-rotation every icon-only diamond needs — nothing extra here
+   except this one flip for "previous". */
+.social-carousel__nav--prev {
+  left: 24px;
+}
+.social-carousel__nav--prev > .arrow-glyph {
+  /* Arrow artwork points right by default — flip for "previous". */
+  transform: rotate(-45deg) scaleX(-1);
+}
+.social-carousel__nav--next {
+  right: 24px;
 }
 
 /* ===================================================================
@@ -1503,22 +1728,25 @@ a.diamond-cta {
    Split CTA
 =================================================================== */
 .split-cta {
-  /* Same height as 2 square-grid rows (a 4-col grid's own
-     square-grid--rows-2 is aspect-ratio:4/2, i.e. 2:1 — matching that
-     ratio here gives this section the same "2 squares tall" height,
-     without actually being made of tiles). No margin — main's own gap
-     (see above) handles spacing to its neighbors now. */
-  aspect-ratio: 2 / 1;
+  /* Was a clean 2/1 (matching 2 square-grid rows, i.e. "2 squares tall")
+     — trimmed a bit shorter per explicit follow-up feedback. */
+  aspect-ratio: 2.15 / 1;
   display: grid;
   /* Was 2fr 1fr (deco at only 1/3 width) — the illustration is meant to
      take up "a little more than half" of the section (per the mockup),
      matching its own explicit "2 squares wide" spec against a 4-square-
-     wide section (2 of 4 = half). */
-  grid-template-columns: 1fr 1.1fr;
-  gap: 32px;
+     wide section (2 of 4 = half). Bumped further toward the deco side
+     per follow-up feedback that it was still too small. */
+  grid-template-columns: 0.85fr 1.3fr;
+  /* Bumped from 32px — a wider gap here does double duty: more breathing
+     room from the illustration, AND it shortens the text column's own
+     available width (so its lines wrap shorter), both per explicit
+     request. */
+  gap: 72px;
   align-items: center;
 }
-.split-cta__text { padding-left: 60px; }
+/* Bumped from 60px per explicit request to push the text further right. */
+.split-cta__text { padding-left: 120px; }
 .split-cta__text p {
   /* Explicit body-text preset — matches the mockup closely (plain
      Freight, not an accidentally-inherited display treatment). Same
@@ -1531,7 +1759,8 @@ a.diamond-cta {
 .split-cta__cta {
   display: flex;
   align-items: center;
-  gap: 24px;
+  /* Was 24px — pulled the diamond in closer to the text per feedback. */
+  gap: 10px;
   /* Generous gap from the paragraph above — noticeably more than the
      12px between paragraph lines, matching the mockup. */
   margin-top: 40px;
@@ -1551,13 +1780,47 @@ a.diamond-cta {
    doesn't work here the way it does there. margin-top:0 overrides that
    variant's own 36px top margin too — that value exists for square 7's
    STACKED layout (diamond below text), not this INLINE one
-   (.split-cta__cta already centers it against the text via flexbox;
-   the leftover top margin was pushing it visibly below that center). */
+   (.split-cta__cta already centers it against the text via flexbox).
+   translateY(-6px): flexbox align-items:center centers this against
+   .split-cta__link's own LINE BOX, which sits a few px lower than the
+   text glyphs' true visual center (line-height leaves more room below
+   the glyphs than above) — measured the actual gap directly rather than
+   eyeballing it. Hover fills brown (not the shared tan default) with a
+   cream arrow (see .split-cta__diamond-arrow-cream) — same reasoning as
+   the border: tan-on-cream reads as barely-there here. */
 .split-cta__diamond {
   width: 28px;
   height: 28px;
   margin-top: 0;
   border-color: var(--color-dark);
+  /* MUST combine with the base .diamond-cta rotate(45deg) in one value
+     — a separate transform here would replace it outright rather than
+     add to it (same class of bug as elsewhere in this file), rendering
+     a square instead of a diamond. translateY listed first (outermost)
+     so it shifts the ALREADY-rotated shape in plain screen-space,
+     rather than being rotated along with it. */
+  transform: translateY(-6px) rotate(45deg);
+}
+.split-cta__diamond:hover {
+  background-color: var(--color-dark);
+}
+.split-cta__diamond .arrow-glyph {
+  /* Smaller than the shared 22x14 default — matches this diamond's own
+     smaller (28px vs. 36px) scale; at the standard size the arrow read
+     as oversized/cramped inside it. Same 11:7 aspect ratio preserved. */
+  width: 14px;
+  height: 9px;
+}
+.split-cta__diamond-arrow-cream {
+  -webkit-mask-image: url("../assets/images/Arrow, blue.png");
+  mask-image: url("../assets/images/Arrow, blue.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: var(--color-cream);
 }
 .split-cta__deco {
   display: flex;
@@ -1574,17 +1837,24 @@ a.diamond-cta {
    a literal reference to any actual square tile elsewhere on the page. */
 .split-cta__illustration-wrap {
   position: relative;
-  /* No max-width cap — fills the deco column (now ~half the section's
-     own width, see .split-cta above), matching the mockup's "a little
-     more than half" sizing instead of a small, arbitrarily-capped box. */
-  width: 100%;
+  /* Was 100% — filled its grid column edge-to-edge, so .split-cta__deco's
+     justify-content:center had zero free space to actually center within
+     (flush to both column edges isn't "centered," it's just full-bleed).
+     90% leaves real breathing room on both sides so the box visibly
+     floats centered in its column instead of touching either edge. */
+  width: 90%;
   aspect-ratio: 4 / 3;
   background: var(--color-illustration-bg);
   border-radius: 24px;
   /* NOT overflow:hidden — .split-cta__illustration is deliberately
      taller than this box and bleeds out past its bottom edge onto the
      page (the image's own built-in fade-to-cream at its bottom is what
-     makes that bleed read as intentional rather than a clipping bug). */
+     makes that bleed read as intentional rather than a clipping bug).
+     History on this value: -40px -> -65px -> -110px -> -78px -> -95px ->
+     0 (dead center, per explicit request) -> -140px (way too far — bled
+     into the ENTIRE preceding section's content, not just the header
+     strip) -> -70px -> -100px (too high again, nudged back down) -> -55px. */
+  transform: translateY(-55px);
 }
 /* Section 3 Artwork.png is portrait or (2428x3132, roughly 3:4) —
    noticeably taller than this box's own 4:3 ratio, so sizing it to a
@@ -1597,10 +1867,15 @@ a.diamond-cta {
   top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  width: 72%;
+  /* Bumped repeatedly per follow-up feedback that it read as unchanged,
+     then dialed back down after "massive": 72% -> 90% -> 80% -> 70%. */
+  width: 70%;
   height: auto;
 }
 .split-cta__illustration-asterisk {
+  /* Hidden for now per explicit request — not removed from the HTML,
+     so they're easy to bring back later. */
+  display: none;
   position: absolute;
   height: auto;
   animation: hero-asterisk-spin 8s linear infinite;
@@ -1616,54 +1891,6 @@ a.diamond-cta {
   right: 8%;
 }
 
-/* ===================================================================
-   Featured article banner
-=================================================================== */
-.feature-banner {
-  position: relative;
-  min-height: 320px;
-  display: flex;
-  align-items: flex-end;
-  color: var(--color-tan);
-  background: var(--color-dark);
-  overflow: hidden;
-  border-radius: 15px;
-}
-.feature-banner__image-placeholder {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    135deg,
-    rgba(249,245,236,0.06),
-    rgba(249,245,236,0.06) 10px,
-    transparent 10px,
-    transparent 20px
-  );
-}
-.feature-banner__image-placeholder::after {
-  content: attr(data-caption);
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  text-align: center;
-  font-size: var(--text-small);
-  opacity: 0.5;
-}
-.feature-banner__caption {
-  position: relative;
-  z-index: 1;
-  padding: 32px;
-}
-.feature-banner__edition { font-size: var(--text-small); opacity: 0.8; margin-bottom: 8px; }
-.feature-banner__title {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  max-width: 20em;
-}
-.feature-banner__subtitle { margin-top: 8px; opacity: 0.85; }
 
 /* ===================================================================
    Publications
@@ -1938,7 +2165,7 @@ a.diamond-cta {
 =================================================================== */
 .square,
 .image-mosaic__mask,
-.feature-banner,
+.social-carousel__mask,
 .quote-block,
 .publication-card,
 .split-cta {
@@ -1956,7 +2183,7 @@ a.diamond-cta {
 }
 .square.is-visible,
 .image-mosaic__mask.is-visible,
-.feature-banner.is-visible,
+.social-carousel__mask.is-visible,
 .quote-block.is-visible,
 .publication-card.is-visible,
 .split-cta.is-visible {
@@ -1968,10 +2195,12 @@ a.diamond-cta {
 /* Mask panels invert the direction: start opaque (hiding the photo
    behind them), fade OUT on reveal instead of in. Higher specificity
    than the bare .is-visible above, so it wins regardless of order. */
-.image-mosaic__mask {
+.image-mosaic__mask,
+.social-carousel__mask {
   opacity: 1;
 }
-.image-mosaic__mask.is-visible {
+.image-mosaic__mask.is-visible,
+.social-carousel__mask.is-visible {
   opacity: 0;
 }
 
@@ -2149,6 +2378,36 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   transform: none;
   transition-delay: 0.2s;
 }
+/* Replays the exact pop-in spin the asterisk played on the very first
+   page load (hero-asterisk-intro — see .hero__wordmark-asterisk-wrap's
+   base, unscoped rule above the intro-finished overrides) every time
+   scrolling back up brings the hero into view again, instead of just
+   the plain fade+slide the rule above drives on its own. .is-respinning
+   is added by initHeroEyebrowExit() in main.js ONLY on an actual
+   hidden->visible transition (never on every scroll tick it's already
+   visible for), and removed-then-re-added there each time (forcing a
+   reflow in between) so the animation genuinely restarts even on the
+   2nd/3rd/etc. re-entry, not just the first. 1.5s delay — 0.2s (this
+   same element's own fade-in beat above) + 80% of the 2nd word's own
+   1.6s re-entrance transition, the same "~80%, substantially resolved"
+   convention the ORIGINAL page-load intro used for this exact handoff
+   (see the <header> intro sequence comment in index.html) — so the
+   spin reads as a flourish once the title's basically settled back
+   into place, not a competing motion fighting the title's own slide.
+   An `animation` on a property always wins over a `transition` on that
+   same property while it's running, so this briefly interrupts the
+   tail of the plain fade-in transition above — that's intentional: the
+   whole point is trading the last stretch of "just fading in" for the
+   pop instead. Gated entirely in JS behind prefers-reduced-motion (see
+   initHeroEyebrowExit()), same as everywhere else motion is optional
+   on this page — .is-respinning is simply never added for those users,
+   rather than relying on this rule's specificity to lose to the
+   reduced-motion override below (it wouldn't: 3 classes here beats that
+   rule's 1). */
+body.intro-finished .hero__wordmark-asterisk-wrap.is-respinning {
+  animation: hero-asterisk-intro 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 1.5s;
+}
 /* Nav bar: fades in while dropping down from just above its resting spot. */
 .intro-reveal--drop {
   transform: translateY(-16px);
@@ -2216,7 +2475,7 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
 @media (prefers-reduced-motion: reduce) {
   .square,
   .image-mosaic__mask,
-  .feature-banner,
+  .social-carousel__mask,
   .quote-block,
   .publication-card,
   .split-cta,
@@ -2227,11 +2486,16 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   .intro-reveal--drop,
   .mosaic-reveal,
   .mosaic-reveal--slide { transition: none; opacity: 1; transform: none; }
-  .image-mosaic__mask { opacity: 0; }
+  .image-mosaic__mask,
+  .social-carousel__mask { opacity: 0; }
   /* Roles grid hover swap still needs to toggle (opacity/transform still
      differ between rest and :hover), just instantly rather than sliding. */
   .square__role,
   .square__role-description { transition: none; }
+  /* Carousel nav still needs to actually move the track (it's a
+     click-driven jump between slides, not an ambient animation), just
+     instantly rather than sliding. */
+  .social-carousel__track { transition: none; }
   .intro-splash,
   .intro-splash__asterisk-wrap { animation: none; opacity: 0; visibility: hidden; }
   .hero__wordmark-asterisk-wrap { animation: none; opacity: 1; transform: none; }

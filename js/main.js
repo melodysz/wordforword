@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initMarqueeAsterisks();
   initCustomCursor();
   initRoleTapReveal();
+  initSocialCarousel();
+  initCarouselReveal();
 });
 
 // vertical-align: middle centers an inline-block box against the
@@ -262,7 +264,7 @@ function initLuxuryScroll() {
 // exited — comfortably lenient, not "reset the instant it's offscreen."
 function initRevealOnScroll() {
   const staggeredTargets = document.querySelectorAll(
-    ".square, .image-mosaic__mask, .feature-banner, .quote-block, .publication-card, .split-cta"
+    ".square, .image-mosaic__mask, .social-carousel__mask, .quote-block, .publication-card, .split-cta"
   );
   // .partners reveals as ONE unit (slide up + fade, like the hero
   // elements — see .mosaic-reveal/.mosaic-reveal--slide on it in
@@ -394,8 +396,26 @@ function initHeroEyebrowExit() {
   const asterisk = document.querySelector(".hero__wordmark-asterisk-wrap");
   if (!hero || (!alwaysEls.length && !asterisk)) return;
 
+  // Gates the respin-on-reset flourish below, not just the resting
+  // opacity/transform: prefers-reduced-motion already forces
+  // .hero__wordmark-asterisk-wrap's animation to none in CSS (see
+  // style.css), but .is-respinning's selector is MORE specific than
+  // that override (3 classes vs. 1), so it would still win and
+  // re-enable the spin if left to CSS alone. Simplest fix is to never
+  // add the class in the first place, same as every other
+  // motion-gated feature on this page.
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let ticking = false;
   let asteriskReady = false;
+  // Tracks the asterisk's PREVIOUS visibility so the respin below only
+  // fires on an actual hidden->visible transition (scrolling back up
+  // into the hero after having scrolled away) — not on every scroll
+  // tick while it's already sitting visible. Seeded properly once
+  // asteriskReady flips true (see the "introfinished" listener below),
+  // not here — before that point the asterisk isn't being toggled at
+  // all yet, so there's no real "previous" state to track.
+  let asteriskWasVisible = false;
   const check = () => {
     const rect = hero.getBoundingClientRect();
     const outFraction = Math.max(0, -rect.top) / rect.height;
@@ -403,6 +423,12 @@ function initHeroEyebrowExit() {
     for (const el of alwaysEls) el.classList.toggle("is-visible", visible);
     if (asterisk && asteriskReady) {
       asterisk.classList.toggle("is-visible", visible);
+      if (visible && !asteriskWasVisible && !reduceMotion) {
+        asterisk.classList.remove("is-respinning");
+        void asterisk.offsetWidth;
+        asterisk.classList.add("is-respinning");
+      }
+      asteriskWasVisible = visible;
     }
     ticking = false;
   };
@@ -418,6 +444,7 @@ function initHeroEyebrowExit() {
     "introfinished",
     (e) => {
       asteriskReady = true;
+      asteriskWasVisible = e.detail.asteriskVisible;
       if (asterisk) asterisk.classList.toggle("is-visible", e.detail.asteriskVisible);
     },
     { once: true }
@@ -657,4 +684,77 @@ function initRoleTapReveal() {
       tile.classList.toggle("is-tapped");
     });
   }
+}
+
+// Section 4's carousel: prev/next just move .social-carousel__track by
+// one slide-width via transform, wrapping past either end instead of
+// stopping — modulo (index + slideCount) % slideCount handles both
+// directions in one expression (JS's own % can return negative for a
+// negative left-hand side, e.g. -1 % 4 === -1, not 3 — adding
+// slideCount first keeps it always positive before the real mod).
+function initSocialCarousel() {
+  const track = document.querySelector(".social-carousel__track");
+  const prevBtn = document.querySelector(".social-carousel__nav--prev");
+  const nextBtn = document.querySelector(".social-carousel__nav--next");
+  if (!track || !prevBtn || !nextBtn) return;
+
+  const slideCount = track.children.length;
+  let index = 0;
+
+  const render = () => {
+    track.style.transform = `translateX(-${index * (100 / slideCount)}%)`;
+  };
+
+  prevBtn.addEventListener("click", () => {
+    index = (index - 1 + slideCount) % slideCount;
+    render();
+  });
+  nextBtn.addEventListener("click", () => {
+    index = (index + 1) % slideCount;
+    render();
+  });
+}
+
+// Same 3-step reveal chain as initMosaicReveal() (masks finish -> scrim
+// fades in -> caption fades in), just extended with the 2 nav buttons
+// as a 4th thing that reveals alongside the title/edition — all 3 wait
+// on the SAME scrim transitionend, not chained to each other, since
+// there's no ordering between them that matters. Only wired up for
+// .social-carousel__slide--first: the other 3 slides have no masks/
+// scrim.mosaic-reveal to chain from (see the HTML comment above the
+// carousel) since they're never scrolled into view, only clicked into.
+function initCarouselReveal() {
+  const slide = document.querySelector(".social-carousel__slide--first");
+  if (!slide) return;
+
+  const masks = slide.querySelectorAll(".social-carousel__mask");
+  const scrim = slide.querySelector(".social-carousel__scrim");
+  const rest = [
+    ...slide.querySelectorAll(".social-carousel__title, .social-carousel__edition"),
+    ...document.querySelectorAll(".social-carousel__nav"),
+  ];
+  if (!masks.length || !scrim) return;
+
+  let doneCount = 0;
+  for (const mask of masks) {
+    mask.addEventListener(
+      "transitionend",
+      (e) => {
+        if (e.propertyName !== "opacity") return;
+        doneCount += 1;
+        if (doneCount < masks.length) return;
+        scrim.classList.add("is-visible");
+      },
+      { once: true }
+    );
+  }
+
+  scrim.addEventListener(
+    "transitionend",
+    (e) => {
+      if (e.propertyName !== "opacity") return;
+      for (const el of rest) el.classList.add("is-visible");
+    },
+    { once: true }
+  );
 }
