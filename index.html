@@ -9,103 +9,313 @@
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <!-- "Freight" is a licensed font (not on Google Fonts) — add your own @font-face
        for "Freight Text Pro" in css/style.css once you have the font files. -->
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=36" />
 </head>
 <body>
 
+  <!-- Splash: full-viewport screen, centered asterisk, flipping through
+       4 placeholder asterisks at a CONSTANT pace (350ms hold each — was
+       an accelerating 600/350/200/150ms cadence), each followed by a
+       tiny 70ms blank gap before the next one cuts in — see
+       .intro-splash__asterisk--N in CSS. The BACKGROUND cuts through a
+       color per asterisk too, same hard-cut mechanism (see the
+       intro-splash-bg-* animations on .intro-splash): cream (asterisk
+       1) / tan (2) / dark (3) / grey (4) / red (final) — not a single
+       flat color behind all 5. The asterisk container itself jitters in
+       a tiny, fast "buzzing" wiggle for the whole switching phase (see
+       .intro-splash__asterisk-wrap's animation), stopping dead the
+       instant the final asterisk lands. Lands on the real "Default,
+       Cream" asterisk at 1680ms, lingers 250ms, then the whole screen
+       slides up (no fade — opacity stays 1 the whole time) over 1s
+       starting at 1930ms. All 5 images are stacked in the same spot
+       (absolute, inset:0); each later one explicitly hides the
+       previous one once it appears — no JS needed. That reveals the
+       brown/grey rapidfire cascade layers right below (see
+       .intro-splash-layer) — each one starts HALFWAY through the
+       previous layer's own slide (not the ~80% convention used
+       elsewhere), so the handoffs feel rapidfire rather than a polite
+       wait. The rest of the intro sequence below starts at 2870ms
+       (~60%, not ~80%, through the LAST cascade layer — sooner than
+       the usual convention, so the hero doesn't feel like it's waiting
+       around after the splash clears) so it doesn't begin while still
+       hidden underneath. -->
+  <div class="intro-splash" aria-hidden="true">
+    <div class="intro-splash__asterisk-wrap">
+      <img class="intro-splash__asterisk intro-splash__asterisk--1" src="assets/images/Asterisk 1.png" alt="" />
+      <img class="intro-splash__asterisk intro-splash__asterisk--2" src="assets/images/Asterisk 2.png" alt="" />
+      <img class="intro-splash__asterisk intro-splash__asterisk--3" src="assets/images/Asterisk 3.png" alt="" />
+      <img class="intro-splash__asterisk intro-splash__asterisk--4" src="assets/images/Asterisk 4.png" alt="" />
+      <img class="intro-splash__asterisk intro-splash__asterisk--final" src="assets/images/Asterisk - Default, Cream.png" alt="" />
+    </div>
+  </div>
+  <!-- Rapidfire cascade: once the red splash finishes sliding up, it
+       reveals this brown layer sitting right behind it, which itself
+       quickly slides up to reveal the blue-grey layer behind THAT,
+       which slides up to finally reveal the real page. Same
+       fixed/inset:0 mechanism as .intro-splash, just no fade, quick
+       durations, and no asterisk content — plain color slabs. No pure
+       blue in the 5-color palette, so this uses --color-grey (the
+       "muted blue-grey" one) rather than inventing an off-palette
+       color. -->
+  <div class="intro-splash-layer intro-splash-layer--brown" aria-hidden="true"></div>
+  <div class="intro-splash-layer intro-splash-layer--grey" aria-hidden="true"></div>
+
   <!-- ============ HEADER / NAV ============ -->
-  <header class="site-header">
+  <!-- Intro sequence (plays once on load, independent of scroll): everything
+       below is pushed back 2870ms so it starts once the full splash
+       cascade (see top of <body> — asterisk flip-through + brown/grey
+       rapidfire layers) has substantially cleared, not while still hidden
+       underneath it. From there: the 3 wordmark lines one at a time
+       (Word, then the "for" image overlay, then Word) — NOT an even
+       stagger. The gaps DECELERATE (130ms, then 350ms) so the title
+       feels like a continuation of the splash cascade's own rapidfire
+       speed, winding down to a smooth, slow stop rather than clicking
+       through 3 evenly-spaced beats — Word:2870ms / for:3000ms (+130) /
+       Word:3350ms (+350), same 480ms total span as an even split would
+       have used, just redistributed. Then both eyebrow blocks start
+       together (left/right in sync) once the whole title is
+       substantially resolved (~80% into the last word's 1.6s: 3350 +
+       1280 = 4630ms), staggered by 240ms internally (4630ms / 4870ms)
+       — the hero asterisk (the one beside the second word's "d") also
+       pops in at 4630ms, same as the eyebrows. The nav bar starts at
+       4870ms too — the SAME moment as the last eyebrow line, not
+       offset from it — sliding down + fading in as one unit (logo/
+       links are NOT staggered individually — opacity:0 on the header
+       hides them together, no per-child classes needed). Everything
+       shares the same slow "easeOutCubic" curve
+       (fast start, slow finish that stays visible the whole way; see
+       .intro-reveal--slide-slow). -->
+  <header class="site-header intro-reveal intro-reveal--drop" style="--intro-delay: 4870ms;">
+    <a href="index.html" class="nav__logo">
+      <img src="assets/images/Logo.png" alt="Word for Word logo" />
+    </a>
     <nav class="nav">
       <ul class="nav__links">
-        <li><a href="#overview" class="is-active">Overview</a></li>
-        <li><a href="#publications">Publications</a></li>
-        <li><a href="#about">About Us</a></li>
-        <li><a href="#get-involved">Get Involved</a></li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="publications.html">Publications</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="get-involved.html">Get Involved</a></li>
+        <li class="nav__indicator-slot" aria-hidden="true"><span class="nav__indicator"></span></li>
       </ul>
     </nav>
   </header>
 
+  <!-- Fixed viewport frame: starts essentially at the bottom of the nav
+       bar and runs to the bottom of the screen, holding at any scroll
+       position since it's fixed to the viewport, not the page. All 4 of
+       its own corners are rounded — this is what owns the "curves into
+       the content" illusion (not the nav bar: its own corner sits in a
+       space scrolled content never reaches, so it can only ever reveal
+       the static page background behind it, which is the same cream as
+       the bar itself — camouflaged, not actually a fix). The middle is
+       genuinely empty (no fill at all) — only the inset box-shadow ring
+       is painted, like a shape with its center cut out, not a
+       see-through overlay. -->
+  <div class="viewport-frame" aria-hidden="true"></div>
+  <!-- Fills the sliver each of the frame's 4 rounded corners leaves
+       unpainted near its own true corner (see the CSS for the actual
+       geometry these are built from). -->
+  <div class="viewport-frame-patch viewport-frame-patch--top-left" aria-hidden="true"></div>
+  <div class="viewport-frame-patch viewport-frame-patch--top-right" aria-hidden="true"></div>
+  <div class="viewport-frame-patch viewport-frame-patch--bottom-left" aria-hidden="true"></div>
+  <div class="viewport-frame-patch viewport-frame-patch--bottom-right" aria-hidden="true"></div>
+  <!-- A last, tiny sliver remained specifically at the bottom two
+       corners even after sizing their circle patches up — right along
+       the bottom edge, a little in from the corner. Rather than grow
+       those circles further (which starts reading as its own shape,
+       per earlier feedback), a small flat rectangle just for that
+       leftover speck. -->
+  <div class="viewport-frame-speck viewport-frame-speck--bottom-left" aria-hidden="true"></div>
+  <div class="viewport-frame-speck viewport-frame-speck--bottom-right" aria-hidden="true"></div>
+
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <p class="hero__eyebrow">The University of Pennsylvania's only</p>
-    <h1 class="hero__wordmark">Word<span class="hero__for">for</span>Word<span class="hero__asterisk">*</span></h1>
-    <p class="hero__eyebrow hero__eyebrow--right">undergraduate medical<br />humanities journal</p>
+    <p class="hero__eyebrow">
+      <span class="hero__eyebrow-line intro-reveal intro-reveal--slide-slow" style="--intro-delay: 4630ms;">The University of</span>
+      <span class="hero__eyebrow-line intro-reveal intro-reveal--slide-slow" style="--intro-delay: 4870ms;">Pennsylvania&rsquo;s only</span>
+    </p>
+    <!-- "for" is a real image asset, sitting on top of/overlapping both
+         "Word"s (absolutely-positioned overlay, not a 3rd flex item) to
+         match the original combined logotype. The two "Word"s are
+         still text placeholders pending their own image treatment. -->
+    <div class="hero__wordmark-wrap">
+      <div class="hero__wordmark-placeholder" aria-hidden="true">
+        <span class="hero__wordmark-word hero__wordmark-word--1"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 2870ms;">Word</span></span>
+        <span class="hero__wordmark-word hero__wordmark-word--2"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3350ms;">Word</span></span>
+      </div>
+      <div class="hero__wordmark-for-wrap" aria-hidden="true">
+        <img class="hero__wordmark-for hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3000ms;" src="assets/images/Homepage hero title.png" alt="" />
+      </div>
+      <!-- Two elements so two rotations can compose: the WRAP does a
+           one-shot decelerating "extra" spin (large -> 0deg) plus the
+           opacity/scale pop-in; the inner img's own continuous
+           constant-speed spin (.hero__wordmark-asterisk) runs the
+           whole time underneath. As the wrap's extra rotation decays
+           to 0, the combined visible speed smoothly settles into just
+           the inner img's constant rate — no numeric handoff needed
+           between a one-shot and an infinite animation.
+           Also included in initHeroEyebrowExit()'s scroll-exit toggle
+           (fades+slides with the title/eyebrows once body.intro-finished
+           is set) — see body.intro-finished .hero__wordmark-asterisk-wrap
+           in the CSS for why its one-shot pop-in `animation` gets turned
+           off first (an `animation` touching transform/opacity otherwise
+           blocks a `transition` from ever visibly running on the same
+           element/properties). The inner img's own continuous spin is
+           untouched either way — it's a separate element. -->
+      <div class="hero__wordmark-asterisk-wrap" style="--intro-delay: 4630ms;" aria-hidden="true">
+        <img class="hero__wordmark-asterisk" src="assets/images/Asterisk - Default.png" alt="" />
+      </div>
+    </div>
+    <p class="hero__eyebrow hero__eyebrow--right">
+      <span class="hero__eyebrow-line intro-reveal intro-reveal--slide-slow" style="--intro-delay: 4630ms;">undergraduate medical</span>
+      <span class="hero__eyebrow-line intro-reveal intro-reveal--slide-slow" style="--intro-delay: 4870ms;">humanities journal</span>
+    </p>
   </section>
 
   <main>
 
     <!-- ============ SQUARE GRID — 4 across, 4 down ============ -->
+    <!-- Every tile below has an explicit grid-column/grid-row. This grid
+         mixes plain 1x1 tiles with a 6-tile image mosaic, and letting the
+         browser auto-place any of them is fragile: auto-flow fills ALL 4
+         columns before wrapping to the next row, so as soon as one tile
+         doesn't behave the way you'd expect, everything after it in
+         source order shifts into the wrong cell. Explicit placement makes
+         each tile's position a fact of the markup, not a side effect of
+         what came before it. -->
     <section id="overview" class="square-grid square-grid--4col square-grid--rows-4">
-      <div class="square square--dark" aria-hidden="true"></div>
-      <div class="square square--red">
-        <p class="square__label">We're Word for Word.</p>
+      <div class="square square--checker" style="grid-column: 1; grid-row: 1; --checker-a: var(--color-dark); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+      <div class="square square--red" style="grid-column: 2; grid-row: 1;">
+        <p class="square__label">We are</p>
       </div>
-      <div class="square square--tan">
-        <p class="square__script">&ldquo;What's that?&rdquo;</p>
-        <p class="square__script square__script--sub">Well&hellip;</p>
+      <div class="square square--tan" style="grid-column: 3; grid-row: 1;">
+        <p class="square__script">Word for Word.</p>
       </div>
-      <div class="square square--grey" aria-hidden="true"></div>
-
-      <!-- featured artwork: dimensions of 2 squares wide x 3 squares tall -->
-      <div class="square square--image square--span-image">
-        <div class="square__image-placeholder" data-caption="Featured artwork / cover, Edition 2"></div>
-        <p class="square__image-caption">Read our latest issue! <span class="square__edition">Edition 2 →</span></p>
-      </div>
-
-      <div class="square square--red square--split">
-        <p class="square__body">We're Penn's journal of narrative, here to explore how medicine and humanities intersect.<sup>*</sup></p>
-        <p class="square__footnote">*Still curious?</p>
-      </div>
-      <div class="square square--tan" aria-hidden="true"></div>
-
-      <div class="square square--grey square--span-2-rows square--deco">
-        <p class="square__arc">You're in luck!</p>
-        <div class="diamond-cta">
-          <span>Learn<br />more<br />→</span>
+      <div class="square square--grey square--inset" style="grid-column: 4; grid-row: 1;">
+        <img class="square__inset-image" src="assets/images/Section 1 Square 4.png" alt="Ladybug resting on a flower bud" />
+        <div class="square__inset-asterisk-wrap square__inset-asterisk-wrap--top-left" aria-hidden="true">
+          <div class="square__inset-asterisk"></div>
         </div>
       </div>
-      <div class="square square--dark square--span-2-rows" aria-hidden="true"></div>
+
+      <!-- Featured artwork: ONE uncut <img> spans the full 2 cols x 3 rows
+           area, so it's pixel-perfect with no seams possible (splitting
+           it into 6 separately-sized background-images, as before, meant
+           each tile rounded its own sizing independently — the hairline
+           misalignment between tiles was that rounding drift, not
+           something a bigger/different number would have fixed). The
+           tile-by-tile reveal instead comes from 6 mask panels layered on
+           top that fade OUT to unveil the photo underneath. -->
+      <div class="image-mosaic" style="grid-column: 1 / span 2; grid-row: 2 / span 3;">
+        <img class="image-mosaic__photo" src="assets/images/Latest Edition Cover.jpg" alt="Featured artwork for the latest issue, Edition 2" />
+        <!-- Sequenced after the mosaic tiles: main.js listens for every
+             mask's fade-in to actually finish (not a guessed delay — the
+             mosaic can be taller than the viewport, so tiles don't all
+             enter view at once), then reveals the scrim, then the
+             caption, each after a slight pause once the previous step's
+             transition genuinely completes. -->
+        <div class="image-mosaic__scrim mosaic-reveal" aria-hidden="true"></div>
+        <div class="image-mosaic__masks">
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+          <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
+        </div>
+        <p class="image-mosaic__caption image-mosaic__caption--left image-mosaic__caption--headline mosaic-reveal mosaic-reveal--slide">Read our<br />latest issue! <span class="arrow-glyph"></span></p>
+        <p class="image-mosaic__caption image-mosaic__caption--right mosaic-reveal mosaic-reveal--slide">Edition 2</p>
+        <!-- Separate from .image-mosaic__masks on purpose: those end at
+             opacity:0 permanently once revealed, so a hover effect added
+             to them would have no visible content to brighten. This is
+             its own always-transparent-until-hovered layer, same 2x3
+             grid, sitting on top of everything else in the mosaic. -->
+        <div class="image-mosaic__hover-tiles">
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+          <div class="image-mosaic__hover-tile" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="square square--red square--split" style="grid-column: 3; grid-row: 2;">
+        <p class="square__body">We&rsquo;re Penn&rsquo;s journal of narrative, here to explore how medicine and humanities intersect.<sup>*</sup></p>
+        <p class="square__footnote">*Still curious?</p>
+      </div>
+      <div class="square square--checker" style="grid-column: 4; grid-row: 2; --checker-a: var(--color-tan); --checker-b: var(--color-red);" aria-hidden="true"></div>
+
+      <div class="square square--grey square--deco" style="grid-column: 3; grid-row: 3;">
+        <!-- Curved along an actual circular arc (SVG textPath), not just
+             a flat rotate() tilt like before — the path is the top half
+             of a perfect circle, so the text follows a true curve rather
+             than an approximated one. -->
+        <svg class="square__arc" viewBox="0 0 200 50" aria-hidden="true">
+          <path id="square11-arc-path" d="M 10,50 A 143,143 0 0,1 190,50" fill="none" />
+          <text text-anchor="middle">
+            <textPath href="#square11-arc-path" startOffset="50%">You&rsquo;re in luck!</textPath>
+          </text>
+        </svg>
+        <div class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--blue">
+          <span>Learn<br />more<br /><span class="arrow-glyph"></span></span>
+        </div>
+      </div>
+      <div class="square square--checker" style="grid-column: 4; grid-row: 3; --checker-a: var(--color-dark); --checker-b: var(--color-red);" aria-hidden="true"></div>
+
+      <div class="square square--checker" style="grid-column: 3; grid-row: 4; --checker-a: var(--color-grey); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+      <div class="square square--dark square--inset" style="grid-column: 4; grid-row: 4;">
+        <img class="square__inset-image" src="assets/images/Section 1 Square 16.png" alt="Diamond-cropped detail of a flower bud" />
+        <div class="square__inset-asterisk-wrap square__inset-asterisk-wrap--bottom-right" aria-hidden="true">
+          <div class="square__inset-asterisk"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ============ GET INVOLVED BANNER ============ -->
+    <!-- Full-bleed (ignores the page's 10px margin via the 100vw/negative
+         -margin trick) so the repeated text reads as a carousel strip cut
+         off at both screen edges — it's static, doesn't actually scroll,
+         the repetition + off-screen crop is what sells the illusion. -->
     <section id="get-involved" class="marquee-banner">
       <p class="marquee-banner__track">
-        Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; GET INVOLVED &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*
+        Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*&nbsp; Get Involved &nbsp;*
       </p>
     </section>
 
     <!-- ============ GET INVOLVED: ROLES SQUARE GRID ============ -->
     <section class="square-grid square-grid--4col square-grid--rows-2">
       <div class="square square--red">
-        <h3 class="square__role">Interviewer</h3>
+        <h3 class="square__role square__role--display-italic">Interviewer</h3>
       </div>
-      <div class="square square--tan" aria-hidden="true"></div>
+      <div class="square square--tan">
+        <h3 class="square__role square__role--caps">Columnist</h3>
+      </div>
       <div class="square square--grey">
-        <h3 class="square__role">Editor</h3>
-      </div>
-      <div class="square square--cream">
-        <h3 class="square__role">Designer</h3>
-      </div>
-
-      <div class="square square--cream">
-        <p class="square__body square__body--small">Locate and interview individuals of interest about a topic that intersects with science, humanities, and medicine.</p>
+        <h3 class="square__role square__role--display">Editor</h3>
       </div>
       <div class="square square--dark">
-        <h3 class="square__role square__role--light">Columnist</h3>
+        <h3 class="square__role square__role--script">Designer</h3>
       </div>
-      <div class="square square--pattern-diamond" aria-hidden="true"></div>
-      <div class="square square--cream square--deco">
-        <p class="square__script square__script--sub">Applications open<br />in the spring.</p>
-      </div>
-    </section>
 
-    <p class="intro-line">Listen closely. Write boldly. Draw thoughtfully.<br />Join the team.</p>
+      <div class="square square--checker" style="--checker-a: var(--color-grey); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+      <div class="square square--dark square--content-left">
+        <p class="square__body square__body--small">Listen closely. Write boldly. Draw thoughtfully.<br />Join the team.</p>
+      </div>
+      <div class="square square--red square--content-left">
+        <p class="square__script square__script--sub">Applications open<br />in the spring.</p>
+        <div class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--red diamond-cta--tight">
+          <span class="arrow-glyph"></span>
+        </div>
+      </div>
+      <div class="square square--checker" style="--checker-a: var(--color-tan); --checker-b: var(--color-red);" aria-hidden="true"></div>
+    </section>
 
     <!-- ============ GUEST PUBLICATION CTA ============ -->
     <section class="split-cta">
       <div class="split-cta__text">
-        <p>Besides applying to be a club member, there are other ways to participate in Word for Word's mission.</p>
-        <a href="#" class="split-cta__link">Submit a guest publication. →</a>
+        <p>Besides applying to be a club member, there are other ways to participate in Word for Word&rsquo;s mission.</p>
+        <a href="#" class="split-cta__link">Submit a guest publication. <span class="arrow-glyph"></span></a>
       </div>
       <div class="split-cta__deco" aria-hidden="true">
         <div class="deco-flower deco-flower--large"></div>
@@ -118,7 +328,7 @@
         <p class="square__body square__body--small">Keep up with the latest!</p>
       </div>
       <div class="square square--cream">
-        <p class="square__body square__body--small">For news &amp; events, follow us <a href="https://instagram.com/pennwordforword" target="_blank" rel="noopener">@pennwordforword</a> on Instagram.</p>
+        <p class="square__body square__body--small">For news &amp; events, follow us <a href="https://www.instagram.com/pennword4word/?hl=en" target="_blank" rel="noopener">@pennword4word</a> on Instagram.</p>
       </div>
       <div class="square square--dark square--deco">
         <p class="square__script square__script--light">Check us out!</p>
@@ -128,20 +338,24 @@
 
     <!-- ============ FEATURED ARTICLE ============ -->
     <section class="feature-banner">
-      <div class="feature-banner__image-placeholder" data-caption="The Consumptive's Kiss: Tuberculosis &amp; the Elegance of Death"></div>
+      <div class="feature-banner__image-placeholder" data-caption="The Consumptive&rsquo;s Kiss: Tuberculosis &amp; the Elegance of Death"></div>
       <div class="feature-banner__caption">
         <p class="feature-banner__edition">Edition 2</p>
-        <h2 class="feature-banner__title">The Consumptive's Kiss: Tuberculosis &amp; the Elegance of Death</h2>
+        <h2 class="feature-banner__title">The Consumptive&rsquo;s Kiss: Tuberculosis &amp; the Elegance of Death</h2>
         <p class="feature-banner__subtitle">The Doctor as Writer in the Soviet Union</p>
       </div>
     </section>
 
-    <!-- ============ PUBLICATIONS ============ -->
-    <section id="publications" class="publications">
-      <p class="marquee-banner__track marquee-banner__track--muted">
-        Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; PUBLICATIONS &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*
+    <!-- ============ PUBLICATIONS BANNER ============ -->
+    <!-- Same full-bleed carousel-strip treatment as #get-involved above. -->
+    <section id="publications" class="marquee-banner">
+      <p class="marquee-banner__track">
+        Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*&nbsp; Publications &nbsp;*
       </p>
+    </section>
 
+    <!-- ============ PUBLICATIONS ============ -->
+    <section class="publications">
       <div class="publications__grid">
         <article class="publication-card">
           <div class="publication-card__cover publication-card__cover--placeholder" data-caption="Summer 2024 Cover"></div>
@@ -157,7 +371,7 @@
         </article>
       </div>
 
-      <a href="#" class="publications__view-more">View more →</a>
+      <a href="#" class="publications__view-more">View more <span class="arrow-glyph"></span></a>
     </section>
 
     <!-- ============ DIAMOND DIVIDER ============ -->
@@ -169,32 +383,52 @@
     <!-- ============ QUOTE ============ -->
     <section class="quote-block">
       <p>Empowering voices <em>previously unheard.</em></p>
-      <p class="quote-block__tag">History &amp; Sociology of Science</p>
     </section>
 
     <!-- ============ PARTNER LOGOS ============ -->
     <section class="partners">
-      <div class="partners__logo">History &amp; Sociology of Science</div>
-      <div class="partners__logo">Kelly Writers House</div>
-      <div class="partners__logo">Perelman School of Medicine</div>
+      <img class="partners__logo" src="assets/images/Sponsor_ History &amp; Sociology of Science.png" alt="History &amp; Sociology of Science" />
+      <img class="partners__logo partners__logo--kelly" src="assets/images/Sponsor_ Kelly Writers House.png" alt="The Kelly Writers House" />
+      <img class="partners__logo" src="assets/images/Sponsor_ Perelman.png" alt="Perelman School of Medicine, University of Pennsylvania" />
     </section>
 
   </main>
 
   <!-- ============ FOOTER ============ -->
-  <footer id="about" class="site-footer">
-    <div class="site-footer__content">
-      <h2 class="site-footer__wordmark">Word<br />for<br />Word</h2>
+  <!-- The <footer> itself IS the grid (square-grid square-grid--4col —
+       same utility classes as section 1's #overview), not a wrapper
+       around a separate grid div. GENUINELY 4 independent squares (col
+       1-4), same as any other 1-row square-grid on the page — squares 1
+       & 4 are checker tiles, squares 2 & 3 are plain dark squares with
+       no content of their own. .site-footer__center is a SEPARATE
+       element placed in the SAME grid cells as squares 2-3 (grid-column:
+       2/span 2) — CSS grid allows overlapping placement, and since it
+       comes later in DOM order it paints on top of them. It holds all
+       the actual content (title/links/etc.) and reveals on its OWN
+       delay, strictly AFTER all 4 squares (see initRevealOnScroll's
+       footerCenter override in main.js) — so the footer visibly
+       animates in as 4 plain tiles first, THEN the content fades in on
+       top, rather than the content being tangled into the tile-by-tile
+       sequence itself (impossible to get looking clean when 1 of the "4
+       tiles" is actually a merged double-wide cell full of text). -->
+  <footer id="about" class="site-footer square-grid square-grid--4col">
+    <div class="square square--checker" style="grid-column: 1; grid-row: 1; --checker-a: var(--color-dark); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+    <div class="square square--dark" style="grid-column: 2; grid-row: 1;" aria-hidden="true"></div>
+    <div class="square square--dark" style="grid-column: 3; grid-row: 1;" aria-hidden="true"></div>
+    <div class="square square--checker" style="grid-column: 4; grid-row: 1; --checker-a: var(--color-dark); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+    <div class="square site-footer__center" style="grid-column: 2 / span 2; grid-row: 1;">
+      <img class="site-footer__title" src="assets/images/Footer Title.png" alt="Word for Word*" />
       <ul class="site-footer__links">
-        <li><a href="https://instagram.com/pennwordforword" target="_blank" rel="noopener">Instagram</a></li>
-        <li><a href="#" target="_blank" rel="noopener">Penn Clubs</a></li>
-        <li><a href="mailto:melodyserenazhang@gmail.com">Email</a></li>
+        <li><a href="https://www.instagram.com/pennword4word/?hl=en" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a href="https://pennclubs.com/club/word-for-word/" target="_blank" rel="noopener">Penn Clubs</a></li>
+        <li><a href="mailto:wordforwordpenn@gmail.com">Email</a></li>
       </ul>
+      <p class="site-footer__inspo">Site Inspiration: <a href="https://www.bruegel2018.at/?ref=httpster.net" target="_blank" rel="noopener">Kunsthistorisches Museum</a></p>
+      <p class="site-footer__copyright">© 2026 Word for Word | <a href="mailto:melodyserenazhang@gmail.com">melodyserenazhang@gmail.com</a></p>
     </div>
-    <p class="site-footer__copyright">© 2025 Word for Word | melodyserenazhang@gmail.com</p>
   </footer>
 
   <script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=28"></script>
 </body>
 </html>
