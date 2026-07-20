@@ -4,12 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word for Word — Penn Medical Humanities Journal</title>
+  <!-- Stamped before any external resource request below (fonts, the
+       Lenis CDN script) so initIntroReveal() in main.js can measure how
+       long THOSE took on a cold/first-in-a-while load and subtract it
+       back out of the intro timing — see the comment on
+       initIntroReveal() for why that matters. -->
+  <script>window.__pageLoadStart = Date.now();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <!-- "Freight" is a licensed font (not on Google Fonts) — add your own @font-face
        for "Freight Text Pro" in css/style.css once you have the font files. -->
-  <link rel="stylesheet" href="css/style.css?v=36" />
+  <link rel="stylesheet" href="css/style.css?v=64" />
 </head>
 <body>
 
@@ -17,21 +23,33 @@
        4 placeholder asterisks at a CONSTANT pace (350ms hold each — was
        an accelerating 600/350/200/150ms cadence), each followed by a
        tiny 70ms blank gap before the next one cuts in — see
-       .intro-splash__asterisk--N in CSS. The BACKGROUND cuts through a
-       color per asterisk too, same hard-cut mechanism (see the
-       intro-splash-bg-* animations on .intro-splash): cream (asterisk
-       1) / tan (2) / dark (3) / grey (4) / red (final) — not a single
-       flat color behind all 5. The asterisk container itself jitters in
-       a tiny, fast "buzzing" wiggle for the whole switching phase (see
-       .intro-splash__asterisk-wrap's animation), stopping dead the
-       instant the final asterisk lands. Lands on the real "Default,
-       Cream" asterisk at 1680ms, lingers 250ms, then the whole screen
-       slides up (no fade — opacity stays 1 the whole time) over 1s
-       starting at 1930ms. All 5 images are stacked in the same spot
-       (absolute, inset:0); each later one explicitly hides the
-       previous one once it appears — no JS needed. That reveals the
-       brown/grey rapidfire cascade layers right below (see
-       .intro-splash-layer) — each one starts HALFWAY through the
+       .intro-splash__asterisk--N in CSS. Trial variant: screens 01-04
+       all sit on the SAME cream background now (was a different bg
+       color per screen, Monogatari-title-card style) — instead, the
+       asterisk + caption COLOR itself changes screen to screen: red
+       (01, "verbatim.") / blue — this project's informal name for
+       --color-grey (02, "to the letter.") / darker beige, --color-tan-
+       dark / DBB388, a one-off NOT in the 5-color swatch (03,
+       "testimony.") / brown, --color-dark (04, "truth."). Screen 00
+       ("Word for Word.", the real logo) is unchanged: red bg, cream
+       asterisk. Each screen's caption (2 lines: an italic word/phrase, then
+       its "(0N)" tag below) sits below the asterisk, colored to match
+       THAT screen's asterisk, cut in/out in lockstep with it via the
+       same shared keyframes/timestamps (see .intro-splash__caption--N in
+       CSS) — never jitters, since it lives outside
+       .intro-splash__asterisk-wrap (the jitter is scoped to that wrapper
+       only). Asterisk + caption are centered as ONE group (.intro-splash
+       itself is a flex column, gap:30px, centered) rather than pinning
+       the asterisk alone to true viewport center — that alternative was
+       tried and rejected: it read as "asterisk centered, caption bolted
+       on below," visibly lower than a plain centered arrangement. Lands
+       on the real "Default, Cream" asterisk at
+       1680ms, lingers 250ms, then the whole screen slides up (no fade —
+       opacity stays 1 the whole time) over 1s starting at 1930ms. All 5
+       images/captions are stacked in the same spot; each later one
+       explicitly hides the previous one once it appears — no JS needed.
+       That reveals the brown/grey rapidfire cascade layers right below
+       (see .intro-splash-layer) — each one starts HALFWAY through the
        previous layer's own slide (not the ~80% convention used
        elsewhere), so the handoffs feel rapidfire rather than a polite
        wait. The rest of the intro sequence below starts at 2870ms
@@ -42,10 +60,36 @@
   <div class="intro-splash" aria-hidden="true">
     <div class="intro-splash__asterisk-wrap">
       <img class="intro-splash__asterisk intro-splash__asterisk--1" src="assets/images/Asterisk 1.png" alt="" />
-      <img class="intro-splash__asterisk intro-splash__asterisk--2" src="assets/images/Asterisk 2.png" alt="" />
-      <img class="intro-splash__asterisk intro-splash__asterisk--3" src="assets/images/Asterisk 3.png" alt="" />
-      <img class="intro-splash__asterisk intro-splash__asterisk--4" src="assets/images/Asterisk 4.png" alt="" />
+      <!-- 2/3/4 are divs, not imgs — recolored via CSS mask-image (see
+           style.css) so each can hit an exact arbitrary color (blue /
+           darker beige / brown) rather than the PNG's own native tan/
+           dark/grey. -->
+      <div class="intro-splash__asterisk intro-splash__asterisk--2" aria-hidden="true"></div>
+      <div class="intro-splash__asterisk intro-splash__asterisk--3" aria-hidden="true"></div>
+      <div class="intro-splash__asterisk intro-splash__asterisk--4" aria-hidden="true"></div>
       <img class="intro-splash__asterisk intro-splash__asterisk--final" src="assets/images/Asterisk - Default, Cream.png" alt="" />
+    </div>
+    <div class="intro-splash__caption-wrap">
+      <p class="intro-splash__caption intro-splash__caption--1">
+        <span class="intro-splash__caption-line1">verbatim.</span>
+        <span class="intro-splash__caption-line2">(01)</span>
+      </p>
+      <p class="intro-splash__caption intro-splash__caption--2">
+        <span class="intro-splash__caption-line1">to the letter.</span>
+        <span class="intro-splash__caption-line2">(02)</span>
+      </p>
+      <p class="intro-splash__caption intro-splash__caption--3">
+        <span class="intro-splash__caption-line1">testimony.</span>
+        <span class="intro-splash__caption-line2">(03)</span>
+      </p>
+      <p class="intro-splash__caption intro-splash__caption--4">
+        <span class="intro-splash__caption-line1">truth.</span>
+        <span class="intro-splash__caption-line2">(04)</span>
+      </p>
+      <p class="intro-splash__caption intro-splash__caption--final">
+        <span class="intro-splash__caption-line1">Word for Word.</span>
+        <span class="intro-splash__caption-line2">(00)</span>
+      </p>
     </div>
   </div>
   <!-- Rapidfire cascade: once the red splash finishes sliding up, it
@@ -140,11 +184,11 @@
          still text placeholders pending their own image treatment. -->
     <div class="hero__wordmark-wrap">
       <div class="hero__wordmark-placeholder" aria-hidden="true">
-        <span class="hero__wordmark-word hero__wordmark-word--1"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 2870ms;">Word</span></span>
-        <span class="hero__wordmark-word hero__wordmark-word--2"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3350ms;">Word</span></span>
+        <span class="hero__wordmark-word hero__wordmark-word--1"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3220ms;">Word</span></span>
+        <span class="hero__wordmark-word hero__wordmark-word--2"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3700ms;">Word</span></span>
       </div>
       <div class="hero__wordmark-for-wrap" aria-hidden="true">
-        <img class="hero__wordmark-for hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3000ms;" src="assets/images/Homepage hero title.png" alt="" />
+        <img class="hero__wordmark-for hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3350ms;" src="assets/images/Homepage hero title.png" alt="" />
       </div>
       <!-- Two elements so two rotations can compose: the WRAP does a
            one-shot decelerating "extra" spin (large -> 0deg) plus the
@@ -223,7 +267,16 @@
           <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
           <div class="image-mosaic__mask reveal reveal--mask" aria-hidden="true"></div>
         </div>
-        <p class="image-mosaic__caption image-mosaic__caption--left image-mosaic__caption--headline mosaic-reveal mosaic-reveal--slide">Read our<br />latest issue! <span class="arrow-glyph"></span></p>
+        <!-- TODO(future reference): publications.html doesn't exist yet —
+             same not-yet-built placeholder the nav's own "Publications"
+             link already points to. Point this at the real latest-issue
+             page once it's built. -->
+        <a href="publications.html" class="image-mosaic__caption image-mosaic__caption--left image-mosaic__caption--headline mosaic-reveal mosaic-reveal--slide">Read our<br />latest issue!
+          <span class="arrow-glyph">
+            <img class="arrow-glyph__default" src="assets/images/Arrow, beige.png" alt="" />
+            <img class="arrow-glyph__hover" src="assets/images/Arrow, red.png" alt="" />
+          </span>
+        </a>
         <p class="image-mosaic__caption image-mosaic__caption--right mosaic-reveal mosaic-reveal--slide">Edition 2</p>
         <!-- Separate from .image-mosaic__masks on purpose: those end at
              opacity:0 permanently once revealed, so a hover effect added
@@ -257,9 +310,21 @@
             <textPath href="#square11-arc-path" startOffset="50%">You&rsquo;re in luck!</textPath>
           </text>
         </svg>
-        <div class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--blue">
-          <span>Learn<br />more<br /><span class="arrow-glyph"></span></span>
-        </div>
+        <!-- TODO(future reference): about.html doesn't exist yet — same
+             not-yet-built placeholder the nav's own "About Us" link
+             already points to (see .nav__links above). Point this at
+             the real About page once it's built. -->
+        <a href="about.html" class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--blue">
+          <span>Learn<br />more<br />
+            <span class="arrow-glyph">
+              <!-- "Arrow, brown.png" is the misnamed file for --color-grey
+                   (this project's informal "blue") — see the .arrow-glyph
+                   comment in style.css. -->
+              <img class="arrow-glyph__default" src="assets/images/Arrow, beige.png" alt="" />
+              <img class="arrow-glyph__hover" src="assets/images/Arrow, brown.png" alt="" />
+            </span>
+          </span>
+        </a>
       </div>
       <div class="square square--checker" style="grid-column: 4; grid-row: 3; --checker-a: var(--color-dark); --checker-b: var(--color-red);" aria-hidden="true"></div>
 
@@ -284,29 +349,58 @@
     </section>
 
     <!-- ============ GET INVOLVED: ROLES SQUARE GRID ============ -->
+    <!-- Each role word ends in "*" and each description starts with one
+         (the same "there's more here" asterisk motif used everywhere
+         else on the page) — a permanent, always-visible hint that hover
+         swaps this text for something else, since a touch device can't
+         discover that just by trying to hover. .square__role-tap-btn is
+         the stronger version of that hint: a small diamond button, only
+         rendered on devices with no real hover (see (hover: none) in
+         style.css), that visually invites a tap. Tapping anywhere in
+         the tile (not just the tiny button — see initRoleTapReveal() in
+         main.js) toggles the same reveal :hover already drives on
+         desktop, via a plain .is-tapped class. -->
     <section class="square-grid square-grid--4col square-grid--rows-2">
-      <div class="square square--red">
-        <h3 class="square__role square__role--display-italic">Interviewer</h3>
+      <div class="square square--red square--role-reveal">
+        <h3 class="square__role square__role--display-italic">Interviewer*</h3>
+        <button type="button" class="square__role-tap-btn" aria-label="Show details for Interviewer"><span aria-hidden="true">*</span></button>
+        <p class="square__role-description">*Interview individuals with experiences in medicine and the humanities, and shape those conversations into written narratives.</p>
       </div>
-      <div class="square square--tan">
-        <h3 class="square__role square__role--caps">Columnist</h3>
+      <div class="square square--tan square--role-reveal">
+        <h3 class="square__role square__role--caps">Columnist*</h3>
+        <button type="button" class="square__role-tap-btn" aria-label="Show details for Columnist"><span aria-hidden="true">*</span></button>
+        <p class="square__role-description">*Create narratives on the human side of healthcare, with freedom to write book reviews, opinions, poetry, prose, or analysis.</p>
       </div>
-      <div class="square square--grey">
-        <h3 class="square__role square__role--display">Editor</h3>
+      <div class="square square--grey square--role-reveal">
+        <h3 class="square__role square__role--display">Editor*</h3>
+        <button type="button" class="square__role-tap-btn" aria-label="Show details for Editor"><span aria-hidden="true">*</span></button>
+        <p class="square__role-description">*Work closely with columnists and interviewers to refine clarity, structure, and flow, while respecting the writer&rsquo;s intent.</p>
       </div>
-      <div class="square square--dark">
-        <h3 class="square__role square__role--script">Designer</h3>
+      <div class="square square--dark square--role-reveal">
+        <h3 class="square__role square__role--script">Designer*</h3>
+        <button type="button" class="square__role-tap-btn" aria-label="Show details for Designer"><span aria-hidden="true">*</span></button>
+        <p class="square__role-description">*Translate narrative into visual form, illustrating written pieces in the journal&rsquo;s signature fine-arts aesthetic.</p>
       </div>
 
       <div class="square square--checker" style="--checker-a: var(--color-grey); --checker-b: var(--color-tan);" aria-hidden="true"></div>
       <div class="square square--dark square--content-left">
-        <p class="square__body square__body--small">Listen closely. Write boldly. Draw thoughtfully.<br />Join the team.</p>
+        <p class="square__body square__body--small">Listen closely.<br />Write boldly.<br />Draw thoughtfully.<br />Join the team.</p>
       </div>
       <div class="square square--red square--content-left">
         <p class="square__script square__script--sub">Applications open<br />in the spring.</p>
-        <div class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--red diamond-cta--tight">
-          <span class="arrow-glyph"></span>
-        </div>
+        <!-- TODO(future reference): get-involved.html doesn't exist yet — same
+             not-yet-built placeholder the nav's own "Get Involved" link already
+             points to. Point this at the real page once it's built. Was a bare
+             non-interactive div; now a real <a> so it (a) actually leads
+             somewhere and (b) matches a[href] in initCustomCursor()'s
+             isClickablePoint(), so hovering it triggers the asterisk cursor's
+             clickable state like every other real link/button on the page. -->
+        <a href="get-involved.html" class="diamond-cta diamond-cta--fill-on-hover diamond-cta--fill-on-hover--red diamond-cta--tight">
+          <span class="arrow-glyph">
+            <img class="arrow-glyph__default" src="assets/images/Arrow, beige.png" alt="" />
+            <img class="arrow-glyph__hover" src="assets/images/Arrow, red.png" alt="" />
+          </span>
+        </a>
       </div>
       <div class="square square--checker" style="--checker-a: var(--color-tan); --checker-b: var(--color-red);" aria-hidden="true"></div>
     </section>
@@ -315,10 +409,35 @@
     <section class="split-cta">
       <div class="split-cta__text">
         <p>Besides applying to be a club member, there are other ways to participate in Word for Word&rsquo;s mission.</p>
-        <a href="#" class="split-cta__link">Submit a guest publication. <span class="arrow-glyph"></span></a>
+        <div class="split-cta__cta">
+          <!-- Only the diamond is a real link — plain text, not a 2nd
+               clickable target for the same destination. -->
+          <p class="split-cta__link">Submit a guest publication.</p>
+          <!-- Reuses section 2's small arrow-only diamond's SIZE/shape
+               (.diamond-cta--tight), but overrides color to brown (see
+               .split-cta__diamond in style.css) — this one sits directly
+               on the cream page, not a colored square, so the other
+               instance's tan border/arrow would be low-contrast here. -->
+          <a href="#" class="diamond-cta diamond-cta--fill-on-hover diamond-cta--tight split-cta__diamond">
+            <span class="arrow-glyph">
+              <!-- "Arrow, blue.png" is the misnamed file for --color-dark
+                   — see the .arrow-glyph comment in style.css. -->
+              <img class="arrow-glyph__default" src="assets/images/Arrow, blue.png" alt="" />
+            </span>
+          </a>
+        </div>
       </div>
       <div class="split-cta__deco" aria-hidden="true">
-        <div class="deco-flower deco-flower--large"></div>
+        <!-- Section 3 Artwork.png has a transparent background around the
+             flower + a built-in fade to cream at its own bottom edge (so
+             it blends into the page once it overflows past the dark box
+             below it) — see the width/height comments in style.css for
+             why the box is sized the way it is. -->
+        <div class="split-cta__illustration-wrap">
+          <img class="split-cta__illustration" src="assets/images/Section 3 Artwork.png" alt="" />
+          <img class="split-cta__illustration-asterisk split-cta__illustration-asterisk--small" src="assets/images/Asterisk 3.png" alt="" />
+          <img class="split-cta__illustration-asterisk split-cta__illustration-asterisk--large" src="assets/images/Asterisk 3.png" alt="" />
+        </div>
       </div>
     </section>
 
@@ -371,7 +490,11 @@
         </article>
       </div>
 
-      <a href="#" class="publications__view-more">View more <span class="arrow-glyph"></span></a>
+      <a href="#" class="publications__view-more">View more
+        <span class="arrow-glyph">
+          <img class="arrow-glyph__default" src="assets/images/Arrow, blue.png" alt="" />
+        </span>
+      </a>
     </section>
 
     <!-- ============ DIAMOND DIVIDER ============ -->
@@ -386,6 +509,16 @@
     </section>
 
     <!-- ============ PARTNER LOGOS ============ -->
+    <!-- Reveals as ONE unit (slide up + fade, same as the hero elements)
+         rather than tile-by-tile per logo. NOT the generic .mosaic-reveal/
+         .mosaic-reveal--slide utility (tried first) — that visibly
+         started already-opaque and only slid, fade and slide not
+         actually together; .partners has its own dedicated rule instead
+         (see style.css), matching the hero title's exact values
+         (translateY(36px), 1.6s, same easing) rather than depending on
+         how the shared utility happens to cascade. See
+         initRevealOnScroll() in main.js: .partners is tracked separately
+         from the staggered targets so it never gets a --reveal-delay. -->
     <section class="partners">
       <img class="partners__logo" src="assets/images/Sponsor_ History &amp; Sociology of Science.png" alt="History &amp; Sociology of Science" />
       <img class="partners__logo partners__logo--kelly" src="assets/images/Sponsor_ Kelly Writers House.png" alt="The Kelly Writers House" />
@@ -429,6 +562,6 @@
   </footer>
 
   <script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>
-  <script src="js/main.js?v=28"></script>
+  <script src="js/main.js?v=42"></script>
 </body>
 </html>

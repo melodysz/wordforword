@@ -8,6 +8,14 @@
   --color-cream: #F9F5EC; /* lightest square / page background */
   --color-red:   #B93E2D; /* brand accent square */
   --color-grey:  #9A9EAA; /* muted blue-grey square */
+  /* One-off, explicitly requested addition — NOT part of the 5-color
+     brand swatch above. Used only by the intro splash's cream-bg
+     variant (screens 01-04), for asterisk/caption 03 ("darker beige,"
+     between --color-tan and --color-dark). */
+  --color-tan-dark: #DBB388;
+  /* One-off, explicitly requested — the backdrop behind section 3's
+     illustration (.split-cta__illustration-wrap) only. */
+  --color-illustration-bg: #0e1316;
 
   --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
   --font-body: "Freight Text Pro", Georgia, serif;
@@ -127,19 +135,23 @@ ul { list-style: none; margin: 0; padding: 0; }
    600/350/200/150ms cadence, per feedback that it should stay steady
    instead of speeding up), each hold followed by a tiny 70ms blank gap
    before the next one cuts in — a beat between swaps rather than one
-   appearing the instant the other disappears. The background itself
-   cuts through a color per asterisk too (cream/tan/dark/grey/red, one
-   per stage — see the intro-splash-bg-* animations below), not a
-   single flat color behind all 5. Lands on the real one at 1680ms,
-   lingers 250ms, then the whole screen slides up (opacity untouched —
-   no fade) over 1s starting at 1930ms, same easeOutCubic curve as the
-   hero slide-ins (cubic-bezier(0.33,1,0.68,1)). That reveals a brown
-   layer sitting right behind it (see .intro-splash-layer), which
-   itself slides up over 0.4s starting at 2430ms — halfway through
-   red's own slide — to reveal a blue-grey layer behind THAT (2630ms,
-   0.4s, halfway through brown's) — a rapidfire cascade rather than a
-   single reveal. Every other intro-delay on the page is set relative
-   to the LAST layer finishing — see the HTML comment above <header>.
+   appearing the instant the other disappears. The background cuts
+   through a color per asterisk too (see the intro-splash-bg-*
+   animations below) — deliberately paired with a DIFFERENT palette
+   color than the asterisk's own, Monogatari-title-card style, not a
+   single flat color or a same-family "wash": cream bg/red asterisk
+   (01) / grey bg/tan asterisk (02) / tan bg/dark asterisk (03) / dark
+   bg/grey asterisk (04) / red bg/cream asterisk (00, the real logo).
+   Lands on the real one at 1680ms, lingers 250ms, then the whole
+   screen slides up (opacity untouched — no fade) over 1s starting at
+   1930ms, same easeOutCubic curve as the hero slide-ins
+   (cubic-bezier(0.33,1,0.68,1)). That reveals a brown layer sitting
+   right behind it (see .intro-splash-layer), which itself slides up
+   over 0.4s starting at 2430ms — halfway through red's own slide — to
+   reveal a blue-grey layer behind THAT (2630ms, 0.4s, halfway through
+   brown's) — a rapidfire cascade rather than a single reveal. Every
+   other intro-delay on the page is set relative to the LAST layer
+   finishing — see the HTML comment above <header>.
 =================================================================== */
 .intro-splash {
   position: fixed;
@@ -147,39 +159,54 @@ ul { list-style: none; margin: 0; padding: 0; }
   z-index: 9999;
   background: var(--color-cream);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 30px;
   pointer-events: none;
+  /* Cream for the entire 01-04 run (a trial variant — was a different
+     bg color per screen) — nothing to crossfade between phases 1-4
+     since the color never actually changes there, so only 2 bg
+     animations total: cream at 0ms (steps(1) would be equally correct
+     here since there's nothing to fade between, but 0.15s ease costs
+     nothing and stays consistent with the red one below) and red at
+     1680ms, crossfading into the final/00 logo screen. Screens 01-04
+     vary by asterisk/caption COLOR instead (see
+     intro-splash__asterisk--N below), red/blue/darker-beige/brown in
+     that order.
+     Slide delay bumped 1930->2180ms (+250) — lingers on 00 a bit longer
+     before clearing. .intro-splash-layer--brown/--grey below (the
+     rapidfire cascade this reveals) are shifted by that SAME +250ms to
+     preserve their existing relative timing, and so are the hero
+     title's own --intro-delay values in index.html (they're timed to
+     start right as this cascade clears). initIntroReveal()'s final
+     anchor timeout in main.js is NOT shifted — it's anchored to the
+     eyebrow lines finishing (unaffected by any of this), not to the
+     splash/title timeline, and stays comfortably later than both either
+     way. */
   animation:
-    intro-splash-slide 1s cubic-bezier(0.33, 1, 0.68, 1) 1930ms forwards,
-    intro-splash-bg-cream 0.01s steps(1) 0ms forwards,
-    intro-splash-bg-tan 0.01s steps(1) 420ms forwards,
-    intro-splash-bg-dark 0.01s steps(1) 840ms forwards,
-    intro-splash-bg-grey 0.01s steps(1) 1260ms forwards,
-    intro-splash-bg-red 0.01s steps(1) 1680ms forwards;
+    intro-splash-slide 1s cubic-bezier(0.33, 1, 0.68, 1) 2480ms forwards,
+    intro-splash-bg-cream 0.15s ease 0ms forwards,
+    intro-splash-bg-red 0.15s ease 1980ms forwards;
 }
 @keyframes intro-splash-bg-cream { to { background-color: var(--color-cream); } }
-@keyframes intro-splash-bg-tan   { to { background-color: var(--color-tan); } }
-@keyframes intro-splash-bg-dark  { to { background-color: var(--color-dark); } }
-@keyframes intro-splash-bg-grey  { to { background-color: var(--color-grey); } }
 @keyframes intro-splash-bg-red   { to { background-color: var(--color-red); } }
 /* Smaller than the hero asterisk (0.65x) — this one's just a splash
    decoration, not meant to read at full hero size. Jitters in a tiny,
-   fast "buzzing" wiggle for the ENTIRE switching phase (0 to 1680ms —
-   14 iterations of a 120ms cycle, 14*120=1680 exactly), then stops
-   dead the instant the final asterisk lands: no iteration-count means
-   "run forever," so this uses an explicit count timed to end exactly
-   when .intro-splash__asterisk--final's own cut fires, rather than
-   infinite + a separate stop signal. Every keyframe stop is a small
-   (max ~0.6px — toned down from an earlier ~1.5px, which read as too
-   intense/violent) offset except 0%/100%, which are neutral — so the
-   animation's natural end (after its last iteration) already rests at
-   translate(0,0), with no jump/settle needed. */
+   fast "buzzing" wiggle continuously — including through the final/00
+   asterisk's own linger, not just the 01-04 switching phase like
+   before. infinite (not a fixed iteration count) so it keeps going
+   regardless of exactly how long the linger before the slide-up ends up
+   being, rather than needing to be recalculated every time that
+   duration changes. Every keyframe stop is a small (max ~0.6px — toned
+   down from an earlier ~1.5px, which read as too intense/violent) offset
+   except 0%/100%, which are neutral, so each loop restarts cleanly at
+   translate(0,0) with no visible jump. */
 .intro-splash__asterisk-wrap {
   position: relative;
   width: calc(var(--hero-asterisk-size) * 0.65);
   aspect-ratio: 184 / 200;
-  animation: intro-splash-asterisk-jitter 120ms linear 14 forwards;
+  animation: intro-splash-asterisk-jitter 120ms linear infinite;
 }
 @keyframes intro-splash-asterisk-jitter {
   0%   { transform: translate(0, 0); }
@@ -206,28 +233,81 @@ ul { list-style: none; margin: 0; padding: 0; }
   object-fit: contain;
   opacity: 0;
 }
-.intro-splash__asterisk--1 {
+/* Each asterisk's caption (see .intro-splash__caption-wrap below) cuts
+   in/out at the EXACT same timestamps as its own asterisk — sharing one
+   selector list per phase keeps the two locked together with no risk
+   of drifting apart if the timing ever changes. */
+/* Screen 01 holds 650ms instead of the other screens' 350ms (+300ms) —
+   a first-time visitor's very first frame of the site, so it gets a
+   bit longer to register before flipping onward. Every timestamp AFTER
+   it (screens 02-04, the final/00 logo screen, the slide-up, the
+   brown/grey cascade layers, and the hero title's own --intro-delay
+   values in index.html) is shifted by that same +300ms to preserve
+   their existing relative timing. */
+.intro-splash__asterisk--1,
+.intro-splash__caption--1 {
   animation:
     intro-splash-asterisk-cut 0.01s steps(1) 0ms forwards,
-    intro-splash-asterisk-hide 0.01s steps(1) 350ms forwards;
+    intro-splash-asterisk-hide 0.01s steps(1) 650ms forwards;
+}
+.intro-splash__asterisk--2,
+.intro-splash__caption--2 {
+  animation:
+    intro-splash-asterisk-cut 0.01s steps(1) 720ms forwards,
+    intro-splash-asterisk-hide 0.01s steps(1) 1070ms forwards;
+}
+.intro-splash__asterisk--3,
+.intro-splash__caption--3 {
+  animation:
+    intro-splash-asterisk-cut 0.01s steps(1) 1140ms forwards,
+    intro-splash-asterisk-hide 0.01s steps(1) 1490ms forwards;
+}
+.intro-splash__asterisk--4,
+.intro-splash__caption--4 {
+  animation:
+    intro-splash-asterisk-cut 0.01s steps(1) 1560ms forwards,
+    intro-splash-asterisk-hide 0.01s steps(1) 1910ms forwards;
+}
+.intro-splash__asterisk--final,
+.intro-splash__caption--final {
+  animation: intro-splash-asterisk-cut 0.01s steps(1) 1980ms forwards;
+}
+/* Trial variant: screens 01-04 all sit on cream now (see .intro-splash
+   above), varying by asterisk/caption color instead — red / blue
+   (--color-grey, this project's informal name for it) / darker beige
+   (--color-tan-dark, DBB388) / brown (--color-dark). Asterisk 1 and the
+   final/00 asterisk keep plain <img> tags (their own native PNG color
+   already matches what's needed — red and cream respectively). 2/3/4
+   are <div>s instead (see index.html) — mask-image (the same PNG, used
+   purely as an alpha stencil) over an explicit background-color is the
+   only reliable way to recolor a raster asset to an ARBITRARY exact
+   color; a plain <img>'s own pixel colors can't be overridden by CSS.
+   mask-size/position/repeat below stand in for object-fit:contain,
+   which only applies to actual replaced elements (img/video), not divs. */
+.intro-splash__asterisk--2,
+.intro-splash__asterisk--3,
+.intro-splash__asterisk--4 {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 .intro-splash__asterisk--2 {
-  animation:
-    intro-splash-asterisk-cut 0.01s steps(1) 420ms forwards,
-    intro-splash-asterisk-hide 0.01s steps(1) 770ms forwards;
+  -webkit-mask-image: url("../assets/images/Asterisk 2.png");
+  mask-image: url("../assets/images/Asterisk 2.png");
+  background-color: var(--color-grey);
 }
 .intro-splash__asterisk--3 {
-  animation:
-    intro-splash-asterisk-cut 0.01s steps(1) 840ms forwards,
-    intro-splash-asterisk-hide 0.01s steps(1) 1190ms forwards;
+  -webkit-mask-image: url("../assets/images/Asterisk 3.png");
+  mask-image: url("../assets/images/Asterisk 3.png");
+  background-color: var(--color-tan-dark);
 }
 .intro-splash__asterisk--4 {
-  animation:
-    intro-splash-asterisk-cut 0.01s steps(1) 1260ms forwards,
-    intro-splash-asterisk-hide 0.01s steps(1) 1610ms forwards;
-}
-.intro-splash__asterisk--final {
-  animation: intro-splash-asterisk-cut 0.01s steps(1) 1680ms forwards;
+  -webkit-mask-image: url("../assets/images/Asterisk 4.png");
+  mask-image: url("../assets/images/Asterisk 4.png");
+  background-color: var(--color-dark);
 }
 @keyframes intro-splash-asterisk-cut {
   to { opacity: 1; }
@@ -238,6 +318,50 @@ ul { list-style: none; margin: 0; padding: 0; }
 @keyframes intro-splash-slide {
   to { transform: translateY(-100%); }
 }
+
+/* Caption: 2 lines (an italic word/phrase, then its "(0N)" tag) below
+   the asterisk — Monogatari-style title-card text, not a caption in the
+   nav/footer sense. The 30px gap above it comes from .intro-splash's
+   own flex `gap` (it's the 2nd of 2 flex children, asterisk-wrap being
+   the 1st) — just needs position:relative here as the containing block
+   for its own stacked, individually absolutely-positioned captions
+   below (same reason .intro-splash__asterisk-wrap needs it for its
+   stacked asterisk images). No explicit height: with every
+   .intro-splash__caption child absolutely positioned, this collapses to
+   0 height, which is fine — the flex gap only cares about this box's
+   own (collapsed) edge, not its overflowing content. */
+.intro-splash__caption-wrap {
+  position: relative;
+}
+.intro-splash__caption {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin: 0;
+  white-space: nowrap;
+  text-align: center;
+  opacity: 0;
+}
+.intro-splash__caption-line1 {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-style: italic;
+  font-size: var(--text-body);
+}
+.intro-splash__caption-line2 {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+}
+.intro-splash__caption--1 { color: var(--color-red); }
+.intro-splash__caption--2 { color: var(--color-grey); }
+.intro-splash__caption--3 { color: var(--color-tan-dark); }
+.intro-splash__caption--4 { color: var(--color-dark); }
+.intro-splash__caption--final { color: var(--color-cream); }
 
 /* Rapidfire cascade behind the red splash — see HTML comment. Each
    layer starts its own quick slide once the one ABOVE it is ~80%
@@ -253,22 +377,22 @@ ul { list-style: none; margin: 0; padding: 0; }
 .intro-splash-layer--brown {
   background: var(--color-dark);
   z-index: 9998;
-  /* Starts once the splash is HALFWAY through its own slide (1930 +
-     0.5*1000 = 2430ms) — sooner than the ~80% convention used
+  /* Starts once the splash is HALFWAY through its own slide (2480 +
+     0.5*1000 = 2980ms) — sooner than the ~80% convention used
      elsewhere, so the cascade reads as rapidfire rather than a polite
      handoff. */
-  animation: intro-splash-slide 0.4s cubic-bezier(0.33, 1, 0.68, 1) 2430ms forwards;
+  animation: intro-splash-slide 0.4s cubic-bezier(0.33, 1, 0.68, 1) 2980ms forwards;
 }
 .intro-splash-layer--grey {
   background: var(--color-grey);
   z-index: 9997;
-  /* Same idea — starts halfway through brown's slide (2430 + 0.5*400 =
-     2630ms). The REST of the intro (see the HTML comment above
+  /* Same idea — starts halfway through brown's slide (2980 + 0.5*400 =
+     3180ms). The REST of the intro (see the HTML comment above
      <header>) starts at 60% (not 80%) through THIS layer's own slide —
-     2630 + 0.6*400 = 2870ms — a little sooner than the ~80% convention
+     3180 + 0.6*400 = 3420ms — a little sooner than the ~80% convention
      used everywhere else, per feedback that the hero felt like it took
      too long to start after the splash cleared. */
-  animation: intro-splash-slide 0.4s cubic-bezier(0.33, 1, 0.68, 1) 2630ms forwards;
+  animation: intro-splash-slide 0.4s cubic-bezier(0.33, 1, 0.68, 1) 3180ms forwards;
 }
 
 /* ===================================================================
@@ -324,6 +448,16 @@ ul { list-style: none; margin: 0; padding: 0; }
   right: 0;
   top: var(--nav-item-center);
   transform: translateY(-50%);
+  /* This box spans left:0 to right:0 (the full bar width) so its
+     content can be centered, but that leaves its own hit-testable area
+     stretching all the way to the left — silently sitting on top of
+     .nav__logo and eating clicks meant for it, even though nothing is
+     visibly there. Turned off here and re-enabled only on the actual
+     links, so the empty space around them stops intercepting clicks. */
+  pointer-events: none;
+}
+.nav__links a {
+  pointer-events: auto;
 }
 .nav__links {
   position: relative;
@@ -564,7 +698,7 @@ main {
   /* Nudge lives here, not on .hero__wordmark-for itself — that img
      carries .intro-reveal--slide-slow, which animates its own
      transform for the slide-in. */
-  transform: translate(5px, 6px);
+  transform: translate(5px, 7px);
 }
 .hero__wordmark-for {
   width: 48%;
@@ -577,8 +711,8 @@ main {
    the HTML comment for why these are split across two elements. */
 .hero__wordmark-asterisk-wrap {
   position: absolute;
-  top: 47%;
-  right: -11%;
+  top: 50%;
+  right: -13%;
   width: var(--hero-asterisk-size);
   opacity: 0;
   animation: hero-asterisk-intro 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -666,10 +800,20 @@ main {
    The slower, gentler transition declared here (not on the base .square
    rule above) is what's used specifically when ENTERING hover — CSS
    picks the transition from whichever rule you're transitioning INTO —
-   so hovering in is a slow floaty rise, while un-hovering is quicker. */
+   so hovering in is a slow floaty rise, while un-hovering is quicker.
+   Must also re-list opacity here, not just filter: :hover has higher
+   specificity than the base .square rule, so its `transition` shorthand
+   otherwise REPLACES the base rule's opacity transition outright rather
+   than adding to it. :hover is pure geometry — no mousemove required,
+   just the pointer resting somewhere a tile scrolls into — so a tile
+   revealed while already under a stationary cursor would silently skip
+   its fade-in and snap straight to full opacity. transition-delay pairs
+   positionally with the property list above: opacity keeps the real
+   --reveal-delay stagger, filter stays immediate (0s) as before. */
 .square:hover {
   filter: brightness(1.04);
-  transition: filter 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.7s ease-out, filter 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  transition-delay: var(--reveal-delay, 0ms), 0s;
 }
 /* Body text stays --color-tan (beige) even on dark/colored backgrounds —
    --color-cream is the page's own near-white background color, and using
@@ -799,7 +943,7 @@ main {
   font-family: var(--font-body);
   font-size: var(--text-body);
 }
-.square__script--sub { font-size: var(--text-body); opacity: 0.8; }
+.square__script--sub { font-size: var(--text-body); }
 .square__script--light { color: var(--color-tan); }
 .square__body { font-size: var(--text-body); flex: 1; }
 .square__body--small { font-size: var(--text-body); }
@@ -811,9 +955,9 @@ main {
 }
 .square__role {
   font-family: var(--font-body);
-  /* Matches .image-mosaic__caption--headline ("Read our latest
-     issue!") — was --text-body (24px), a much smaller size. */
-  font-size: 40px;
+  /* Back to the shared body size — was 40px, a one-off much larger than
+     every other tile's text on the page. */
+  font-size: var(--text-body);
   /* <h3> is bold by default in the browser's own UA stylesheet — left
      unset, every role rendered bold (worst on Instrument Serif/Bickham
      Script Pro, neither of which has a real bold face loaded, so the
@@ -832,10 +976,107 @@ main {
 .square__role--caps { text-transform: uppercase; font-weight: 300; }
 /* Bickham Script Pro reads noticeably smaller than the other 3 roles'
    fonts at the same nominal size (thin, compact cursive strokes vs.
-   serif) — boosted further, from an earlier 1.8em, since it still read
-   small next to its siblings even after the shared base size doubled
-   to 40px. */
-.square__role--script { font-family: "Bickham Script Pro", cursive; font-size: 2.6em; }
+   serif) — bumped past the shared body size to compensate, and further
+   still past THAT so Designer reads deliberately a bit bigger than its
+   3 siblings, not just corrected up to parity with them. */
+.square__role--script { font-family: "Bickham Script Pro", cursive; font-size: 1.6em; }
+
+/* Roles grid hover reveal (squares 1-4: Interviewer/Columnist/Editor/
+   Designer) — the role name slides up and fades away as its description
+   slides up and fades in from below, both absolutely-timed-together so
+   they read as one swap rather than two independent fades; leaving
+   hover runs the same transition in reverse (browser-native, no JS)
+   since it's just the two properties returning to their resting
+   values. Both stacked in the same spot (.square__role-description is
+   absolutely positioned) so neither ever collides with or displaces the
+   other. No explicit color on the description: it just inherits
+   whatever color each square's own base rule already sets (--color-tan
+   on red/grey/dark, --color-dark on tan) — the same color the role
+   heading itself is already using, "matching the preceding text"
+   automatically and staying in sync if those ever change.
+   Opacity is intentionally faster than transform in both directions —
+   each text is fully invisible well before it finishes its slide, so
+   the outgoing and incoming text never sit onscreen semi-visible at the
+   same time/position (which read as a visual overlap/collision).
+   .is-tapped (added/removed by initRoleTapReveal() in main.js) drives
+   the exact same reveal on devices with no real hover — see
+   .square__role-tap-btn below. */
+.square--role-reveal .square__role {
+  transition: opacity 0.2s ease-out, transform 0.3s ease-out;
+}
+.square--role-reveal:hover .square__role,
+.square--role-reveal.is-tapped .square__role {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.square__role-description {
+  position: absolute;
+  inset: 0;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 300;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.2s ease-out, transform 0.3s ease-out;
+  pointer-events: none;
+}
+.square--role-reveal:hover .square__role-description,
+.square--role-reveal.is-tapped .square__role-description {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Touch tap affordance: hidden entirely on hover-capable devices via
+   (hover: none) rather than a screen-width breakpoint — this is a real
+   input-capability distinction (a touchscreen at desktop width still
+   needs it), not a viewport-size one. Deliberately NOT built on
+   .diamond-cta — that class's hover-fill mechanics and its child span's
+   hardcoded tan text color (built for one specific tile's background)
+   don't fit a plain tap target that needs to inherit whichever of the
+   4 role tiles' own colors it happens to sit on. Purely a visual
+   affordance: the actual tap target is the whole tile (see
+   initRoleTapReveal() in main.js, which listens on .square--role-reveal
+   itself) — a bigger, easier target than this 32px diamond, which just
+   signals "tap me" since a touch device can't discover the reveal via
+   hover the way a mouse can. */
+.square__role-tap-btn {
+  display: none;
+}
+@media (hover: none) {
+  .square--role-reveal {
+    cursor: pointer;
+  }
+  .square__role-tap-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-top: 14px;
+    padding: 0;
+    background: none;
+    border: 1.25px solid currentColor;
+    color: inherit;
+    transform: rotate(45deg);
+  }
+  /* Counter-rotates the diamond's own 45deg so the asterisk itself
+     reads upright — same trick as .diamond-cta > span/.arrow-glyph. */
+  .square__role-tap-btn span {
+    display: block;
+    transform: rotate(-45deg);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--text-body);
+    line-height: 1;
+  }
+}
 
 /* Featured artwork: a single uncut <img> spans the full 2x3 area (no
    seams possible), with 6 mask panels layered on top in a matching 2x3
@@ -873,7 +1114,12 @@ main {
 .image-mosaic__caption {
   position: absolute;
   bottom: 24px;
-  z-index: 1;
+  /* Higher than .image-mosaic__hover-tiles (z-index:2, no pointer-events:
+     none — it needs to stay interactive for its own per-cell hover
+     flash) — otherwise that layer sits on top here and silently
+     swallows every hover/click meant for this caption's link, even
+     though nothing is visibly on top of it. */
+  z-index: 3;
   color: var(--color-tan);
 }
 .image-mosaic__caption--left { left: 24px; }
@@ -893,6 +1139,16 @@ main {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 40px;
+  transition: color 0.3s ease-out;
+  cursor: pointer;
+}
+/* Same red-on-hover convention as .nav__links a — this is a real link
+   now (see index.html), so it needs its own hover affordance separate
+   from .image-mosaic__hover-tile's generic per-cell photo flash
+   underneath it. */
+.image-mosaic__caption--headline:hover {
+  color: var(--color-red);
+  transition: color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Same faint hover glow as .square, applied to the photo instead: a
@@ -1007,15 +1263,6 @@ main {
   transform: rotate(45deg);
 }
 
-.deco-flower {
-  width: 40%;
-  aspect-ratio: 1;
-  border-radius: 50% 50% 50% 0;
-  background: var(--color-tan);
-  opacity: 0.85;
-}
-.deco-flower--large { width: 140px; }
-
 /* Curved along an actual circular arc via SVG textPath (see the HTML) —
    width caps the rendered size. Height/viewBox trimmed to a shallow
    arc (large radius, small rise) rather than a full half-circle — a
@@ -1037,6 +1284,13 @@ main {
   fill: var(--color-tan);
   font-size: var(--text-body);
 }
+/* CANONICAL "text + arrow" diamond CTA style — square 11's "Learn more"
+   is the only instance today, but this exact size/stroke/line-height/
+   font combo (130px, 1.25px border, --text-body Instrument Serif italic
+   at line-height 1.1, arrow-glyph gap = the shared line-height) is the
+   one to copy for any FUTURE diamond CTA that holds text + an arrow, not
+   just a bare arrow (that's .diamond-cta--tight instead — a distinct,
+   deliberately smaller/different style for icon-only diamonds). */
 .diamond-cta {
   /* Enlarged from 110px (then tightened down from an initial 160px,
      which had too much slack) — measured the actual "Learn more" span
@@ -1046,10 +1300,9 @@ main {
      loose oversized gap 160px left. */
   width: 130px;
   height: 130px;
-  /* Reduced from 20px — paired with the arc's own shallower curve
-     above, this closes most of the previously-oversized gap between
-     the curved text and the diamond. */
-  margin-top: 6px;
+  /* Bumped back up from 6px — that read as too tight against the arc
+     text above it. */
+  margin-top: 16px;
   /* 1.25px — thickened slightly from an earlier 0.75px (which read as
      too thin/hairline once the diamond itself got smaller/more
      prominent), but well short of the original 1.5px this all started
@@ -1062,66 +1315,75 @@ main {
   /* Without this, hovering the arrow/text (plain inline content, not a
      real link) shows the browser's default text-selection I-beam
      cursor — decorative hover only, not a click affordance (same
-     reasoning as .square:hover having no cursor change). */
+     reasoning as .square:hover having no cursor change). Real <a>
+     instances (square 11's "Learn more", square 7's arrow-only diamond)
+     override this back to pointer below. */
   cursor: default;
 }
-/* Built from 2 pseudo-elements (a short shaft + a chevron head) instead
-   of a "→" character — the text-glyph version had 2 real problems a
-   scaleX() transform couldn't fix: it inherited italic from its parent
-   span (the whole reason it looked "angled," not the tail-shortening
-   transform), and there's no way to control a font glyph's own stroke
-   thickness independently of its size. Both are just plain CSS values
-   here: shaft length (width, below) and stroke width (the border/
-   background thickness) are set directly, with no font involved at
-   all — also fixes the italic inheritance automatically, since there's
-   no text to italicize. Colors via currentColor, same as the glyph
-   version, so the existing hover color-swaps still apply unchanged. */
-/* Geometry worked out explicitly (not eyeballed) to close a real gap:
-   rotating a box with only border-top+border-right visible by 45deg
-   does NOT keep its "wing tips" at the box's own edge — for a chevron
-   of side s, both wing tips end up exactly at the box's horizontal
-   CENTER (not it edge), regardless of s. The previous version
-   positioned the chevron via `right:0`, so its center (and therefore
-   its wing tips) sat at (container_width - s/2) — 12.5px — while the
-   shaft ended at 11px, leaving a 1.5px gap between them. Fixing it
-   means positioning the chevron's box so its CENTER lands exactly on
-   the shaft's own end point: left:L (the shaft length) + margin-left:
-   -s/2 (shifting the box left by half its own width, so ITS center,
-   not its edge, sits at L). */
+a.diamond-cta {
+  cursor: pointer;
+}
+/* Now built from the uploaded arrow PNGs (assets/images/Arrow, *.png)
+   instead of CSS pseudo-elements — the shaft+chevron pseudo-element
+   version (border-box geometry, currentColor) turned out impossible to
+   keep pixel-perfect across every stroke-width/color tweak, so this
+   switched to real artwork. Each instance provides 1 or 2 <img> tags
+   (see the HTML): a single static image for plain text links (split-cta,
+   view-more), or 2 stacked images — default + hover color — for
+   anything with its own hover state (diamond CTAs, the mosaic caption).
+   The 2-image ones crossfade via opacity (see .arrow-glyph__hover
+   below); the ANCESTOR decides when (.diamond-cta--fill-on-hover:hover,
+   .image-mosaic__caption--headline:hover), so a single generic rule
+   here covers every hover-swapping instance regardless of which 2
+   colors it actually uses.
+   NOTE: "Arrow, blue.png" and "Arrow, brown.png" are misnamed relative
+   to their actual pixel colors — "blue.png" is --color-dark and
+   "brown.png" is --color-grey. This project already calls --color-grey
+   "blue" informally elsewhere (.diamond-cta--fill-on-hover--blue), so
+   treat these 2 files by their ACTUAL rendered color, not their
+   filename, when using them anywhere. */
 .arrow-glyph {
   display: inline-block;
   position: relative;
-  width: 20px;
+  /* Matches the source PNGs' own 66:42 aspect ratio (11:7) exactly, so
+     object-fit:contain below never needs to compensate for a mismatch. */
+  width: 22px;
   height: 14px;
   vertical-align: middle;
-  overflow: visible;
   cursor: default;
 }
-.arrow-glyph::before {
-  /* shaft, length L=12 */
-  content: "";
+.arrow-glyph img {
   position: absolute;
-  top: 50%;
-  left: 0;
-  width: 12px;
-  height: 1.25px;
-  background: currentColor;
-  transform: translateY(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
-.arrow-glyph::after {
-  /* chevron, side s=6, its own CENTER placed at x=12 (the shaft's end) */
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  margin-left: -3px;
-  width: 6px;
-  height: 6px;
-  border-top: 1.25px solid currentColor;
-  border-right: 1.25px solid currentColor;
-  transform: translateY(-50%) rotate(45deg);
+.arrow-glyph__hover {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
 }
-.diamond-cta span {
+.diamond-cta--fill-on-hover:hover .arrow-glyph__hover,
+.image-mosaic__caption--headline:hover .arrow-glyph__hover {
+  opacity: 1;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.diamond-cta--fill-on-hover:hover .arrow-glyph__default,
+.image-mosaic__caption--headline:hover .arrow-glyph__default {
+  opacity: 0;
+}
+/* :not(.arrow-glyph) — .arrow-glyph is ALSO a <span>, so a bare
+   ".diamond-cta span" selector matches it too whenever it's nested
+   inside THIS span (square 11's "Learn more"), double-counter-rotating
+   it: this span's own -45deg already cancels the diamond's +45deg for
+   everything inside it (that's why the TEXT renders level), so the
+   nested arrow-glyph getting ANOTHER independent -45deg from the same
+   rule stacks to a net -45deg overall — a visibly tilted arrow, not the
+   flat/horizontal one actually wanted. See .diamond-cta > .arrow-glyph
+   below for the (different) direct-child case that DOES need its own
+   -45deg — square 7's icon-only diamond, which has no wrapping span
+   like this one to inherit the correction from. */
+.diamond-cta > span:not(.arrow-glyph) {
   transform: rotate(-45deg);
   font-family: var(--font-display);
   font-style: italic;
@@ -1130,7 +1392,20 @@ main {
   /* Matches --text-body — "same size as body text", not the earlier
      one-off 0.85rem. */
   font-size: var(--text-body);
-  line-height: 1.3;
+  /* Tightened from 1.3 — read as too loose between "Learn"/"more"/the
+     arrow. All 3 are lines of this same span (<br />-separated), so
+     they share this one line-height — the arrow's own gap from "more"
+     automatically matches the Learn/more gap with no separate margin
+     needed, as long as the arrow stays inline in this same flow. */
+  line-height: 1.1;
+}
+/* Only matches when .arrow-glyph is a DIRECT child of .diamond-cta
+   (square 7's icon-only diamond) — nothing else cancels the diamond's
+   own +45deg rotation for it, unlike square 11's arrow (nested inside
+   the span above, which already handles it). Does NOT match square
+   11's arrow, since there it's nested one level deeper. */
+.diamond-cta > .arrow-glyph {
+  transform: rotate(-45deg);
 }
 /* Much smaller than the "Learn more" diamond — this one holds a single
    arrow glyph, so it should hug it tightly rather than use the same
@@ -1202,34 +1477,26 @@ main {
   width: 100%;
   text-align: center;
 }
-/* Each "*" separator is an SVG object (see makeAsteriskSVG() in
-   main.js), not a plain text character — same precisely-centered-ink
-   technique as the custom cursor asterisk, so its own line-height
-   doesn't nudge it out of vertical alignment with the surrounding
-   uppercase text the way a bare glyph would. Sized smaller than the
-   40px text itself (a full-height asterisk reads as oversized next to
-   the surrounding capital letters).
+/* Each "*" separator is the brown asterisk PNG (assets/images/Brown
+   asterisk.png — see initMarqueeAsterisks() in main.js), not a plain
+   text character — a raster image has no font-metric/line-height
+   quirks to fight, unlike a bare "*" glyph.
    vertical-align: baseline (not middle) — middle centers against the
    font's X-HEIGHT, which sits measurably below cap-height, so it always
-   reads as "too low" next to all-caps text no matter how well-centered
-   the glyph's own ink is. baseline is a fixed, well-defined anchor (the
-   box's bottom sits exactly on the text baseline); alignAsteriskToCapHeight()
-   in main.js then applies a JS-measured translateY (real canvas cap-height
-   metrics, not an assumed ratio) to land the glyph's center exactly at
-   cap-height/2 above the baseline instead. */
+   reads as "too low" next to all-caps text. baseline is a fixed,
+   well-defined anchor (the box's bottom sits exactly on the text
+   baseline); alignAsteriskToCapHeight() in main.js then applies a
+   JS-measured translateY (real canvas cap-height metrics, not an
+   assumed ratio) to land the image's center exactly at cap-height/2
+   above the baseline instead. */
 .marquee-asterisk {
-  /* No width/height here — same reasoning as .custom-cursor-wrap: the
-     SVG (see makeAsteriskSVG in main.js) now carries its own explicit,
-     self-consistent width/height/viewBox, so nothing here should
-     rescale it. */
   display: inline-block;
   vertical-align: baseline;
 }
-.marquee-asterisk svg {
-  overflow: visible;
-}
-.marquee-asterisk text {
-  fill: currentColor;
+.marquee-asterisk img {
+  display: block;
+  height: 18px;
+  width: auto;
 }
 
 /* ===================================================================
@@ -1243,23 +1510,110 @@ main {
      (see above) handles spacing to its neighbors now. */
   aspect-ratio: 2 / 1;
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  /* Was 2fr 1fr (deco at only 1/3 width) — the illustration is meant to
+     take up "a little more than half" of the section (per the mockup),
+     matching its own explicit "2 squares wide" spec against a 4-square-
+     wide section (2 of 4 = half). */
+  grid-template-columns: 1fr 1.1fr;
   gap: 32px;
   align-items: center;
 }
 .split-cta__text { padding-left: 60px; }
-.split-cta__text p { margin-bottom: 12px; }
+.split-cta__text p {
+  /* Explicit body-text preset — matches the mockup closely (plain
+     Freight, not an accidentally-inherited display treatment). Same
+     values body{} already sets, just spelled out here since this
+     paragraph is the thing being matched against. */
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  margin-bottom: 12px;
+}
+.split-cta__cta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  /* Generous gap from the paragraph above — noticeably more than the
+     12px between paragraph lines, matching the mockup. */
+  margin-top: 40px;
+}
 .split-cta__link {
-  font-weight: 600;
-  border-bottom: 1px solid currentColor;
+  /* Plain body-text preset (was font-weight:600 + an underline) — the
+     mockup shows this as plain running text, not a bolded/underlined
+     link treatment. Plain <p>, not <a>, now — only the diamond next to
+     it is a real link (see index.html). */
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+/* Overrides .diamond-cta--tight (section 2's icon-only diamond, which
+   this otherwise reuses as-is) for this specific instance: smaller, and
+   brown border/arrow instead of tan — this diamond sits directly on the
+   cream page, not a colored square, so tan (low-contrast against cream)
+   doesn't work here the way it does there. margin-top:0 overrides that
+   variant's own 36px top margin too — that value exists for square 7's
+   STACKED layout (diamond below text), not this INLINE one
+   (.split-cta__cta already centers it against the text via flexbox;
+   the leftover top margin was pushing it visibly below that center). */
+.split-cta__diamond {
+  width: 28px;
+  height: 28px;
+  margin-top: 0;
+  border-color: var(--color-dark);
 }
 .split-cta__deco {
   display: flex;
   justify-content: center;
-  background: var(--color-dark);
-  padding: 24px;
-  border-radius: 15px;
-  overflow: hidden;
+  align-items: center;
+}
+/* Section 3's illustration — a real photo/artwork, not a CSS shape like
+   .deco-flower used to be (removed). --color-illustration-bg is a
+   one-off, explicitly requested color, NOT part of the 5-color swatch
+   (same treatment as --color-tan-dark elsewhere in this file). Sized to
+   the "2 squares wide, 1.5 squares tall" spec via aspect-ratio (4/3 —
+   2 / 1.5 reduces to the same ratio) rather than a hardcoded pixel size,
+   since "square" here is just a relative unit for the proportions, not
+   a literal reference to any actual square tile elsewhere on the page. */
+.split-cta__illustration-wrap {
+  position: relative;
+  /* No max-width cap — fills the deco column (now ~half the section's
+     own width, see .split-cta above), matching the mockup's "a little
+     more than half" sizing instead of a small, arbitrarily-capped box. */
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--color-illustration-bg);
+  border-radius: 24px;
+  /* NOT overflow:hidden — .split-cta__illustration is deliberately
+     taller than this box and bleeds out past its bottom edge onto the
+     page (the image's own built-in fade-to-cream at its bottom is what
+     makes that bleed read as intentional rather than a clipping bug). */
+}
+/* Section 3 Artwork.png is portrait or (2428x3132, roughly 3:4) —
+   noticeably taller than this box's own 4:3 ratio, so sizing it to a
+   width narrower than the box (not 100%) and letting height:auto follow
+   its natural ratio is what produces the "inset on the sides, bleeds
+   out the bottom" look in the mockup, rather than the image exactly
+   filling the box on every edge. */
+.split-cta__illustration {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72%;
+  height: auto;
+}
+.split-cta__illustration-asterisk {
+  position: absolute;
+  height: auto;
+  animation: hero-asterisk-spin 8s linear infinite;
+}
+.split-cta__illustration-asterisk--small {
+  width: 22px;
+  top: 8%;
+  left: 8%;
+}
+.split-cta__illustration-asterisk--large {
+  width: 36px;
+  bottom: 6%;
+  right: 8%;
 }
 
 /* ===================================================================
@@ -1398,19 +1752,34 @@ main {
   /* Padding stays (internal breathing room around the logos) — no
      margin; main's own gap handles spacing to its neighbors. */
   padding: 32px 0;
-}
-.partners__logo {
-  height: 76px;
-  width: auto;
+  /* Reveals as ONE unit (not per-logo) — matches the hero title's exact
+     values (translateY(36px), 1.6s, same easing split as
+     .hero__title-exit: ease-in for the fade, easeOutCubic for the
+     slide) rather than reusing the generic .mosaic-reveal/
+     .mosaic-reveal--slide utility, which was tried first and visibly
+     started already-opaque, only sliding — fade and slide weren't
+     actually happening together. A dedicated rule here sidesteps
+     whatever in that shared utility's cascade caused that. */
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 1.6s ease-in, transform 1.6s cubic-bezier(0.33, 1, 0.68, 1);
   /* Best-effort mitigation for a reported real-Chrome-only bug (not
      reproducible in automated/headless testing across 5+ scroll
      patterns): elements this far down a long page can get a delayed
      "cold start" repaint the first time they're scrolled into view,
-     which can make the opacity transition's very first rendered frame
-     already partway faded in instead of starting clean at 0. This hints
-     the browser to keep the element composite-ready ahead of time
-     rather than repainting it from scratch at the moment it's revealed. */
-  will-change: opacity;
+     which can make the transition's very first rendered frame already
+     partway faded/slid in instead of starting clean. This hints the
+     browser to keep the element composite-ready ahead of time rather
+     than repainting it from scratch at the moment it's revealed. */
+  will-change: opacity, transform;
+}
+.partners.is-visible {
+  opacity: 1;
+  transform: none;
+}
+.partners__logo {
+  height: 76px;
+  width: auto;
 }
 /* Kelly Writers House's own logo is a near-square mark, not a wide
    wordmark like the other two — at the same height constraint it
@@ -1452,7 +1821,7 @@ main {
    section's own container aspect-ratio. */
 .site-footer .square--checker {
   aspect-ratio: 1 / 1;
-  /* Same will-change:opacity mitigation as .partners__logo above — the
+  /* Same will-change:opacity mitigation as .partners above — the
      footer is the very bottom of a long page, same reported symptom. */
   will-change: opacity;
 }
@@ -1572,10 +1941,25 @@ main {
 .feature-banner,
 .quote-block,
 .publication-card,
-.partners__logo,
 .split-cta {
   opacity: 0;
   transition: opacity 0.7s ease-out;
+  /* Always instant when LEAVING .is-visible (whichever direction that
+     represents — see .image-mosaic__mask's inverted case below); the
+     staggered --reveal-delay only applies while ENTERING it (see the
+     .is-visible-scoped rule right below this one). Same reasoning as
+     the hero's scroll-linked exit fix: a delay that also applies when
+     leaving .is-visible can get caught by a fast scroll reversal before
+     it's even started, leaving a stale partial opacity for the next
+     transition to wrongly continue from instead of a clean value. */
+  transition-delay: 0s;
+}
+.square.is-visible,
+.image-mosaic__mask.is-visible,
+.feature-banner.is-visible,
+.quote-block.is-visible,
+.publication-card.is-visible,
+.split-cta.is-visible {
   transition-delay: var(--reveal-delay, 0ms);
 }
 .is-visible {
@@ -1637,6 +2021,20 @@ main {
 .intro-reveal--slide-slow.is-visible {
   transform: none;
 }
+/* Hero title only (word 1, word 2, "for") — the shared easeOutCubic
+   above front-loads its motion (fast start, slow settle), which read as
+   an abrupt "pop" for a pure fade specifically, even though it feels
+   right for the slide. Only overriding transition-timing-function (not
+   the whole `transition` shorthand) so this doesn't reset the
+   transition-delay overrides set elsewhere for the scroll-linked exit/
+   re-entry — comma position matches .intro-reveal--slide-slow's own
+   property order (opacity, transform): ease-in only touches the fade,
+   the slide keeps its existing curve untouched. ease-in is slow-then-
+   fast — the opposite shape from ease-out — so the fade now eases
+   gently into motion instead of jumping straight to visible. */
+.hero__title-exit {
+  transition-timing-function: ease-in, cubic-bezier(0.33, 1, 0.68, 1);
+}
 /* Scroll-linked exit for the hero eyebrow lines (independent of the
    one-time page-load intro above): initHeroEyebrowExit() toggles
    is-visible on ALL 4 lines together, based on the HERO SECTION's own
@@ -1663,8 +2061,16 @@ body.intro-finished .hero__eyebrow-line {
 /* Both lines toggle from the exact same JS trigger (see
    initHeroEyebrowExit()) — this small extra delay on just the 2nd line
    of each block is what makes them read as two lines moving "line by
-   line" instead of a single 2-line block sliding as one paragraph. */
-body.intro-finished .hero__eyebrow-line:nth-child(2) {
+   line" instead of a single 2-line block sliding as one paragraph.
+   Scoped to .is-visible (ENTERING only) — applying it to exiting too
+   meant a fast scroll-down-then-up before this delay had even elapsed
+   could catch the exit transition still waiting in its delay phase,
+   never having actually started, so the following re-entrance would
+   animate from whatever partial opacity was left over instead of a
+   clean 0. Exiting now always uses the base rule's 0s delay above
+   (line 1867), regardless of nth-child — always instant, so there's
+   nothing left mid-flight for a quick reversal to catch. */
+body.intro-finished .hero__eyebrow-line.is-visible:nth-child(2) {
   transition-delay: 90ms;
 }
 body.intro-finished .hero__eyebrow-line:not(.is-visible) {
@@ -1687,10 +2093,16 @@ body.intro-finished .hero__eyebrow-line.is-visible {
 body.intro-finished .hero__title-exit {
   transition-delay: 0s;
 }
-body.intro-finished .hero__wordmark-for {
+/* Both staggers below are scoped to .is-visible (ENTERING only) for the
+   same reason as the eyebrow line 2 stagger above: exiting must always
+   be instant (the base 0s right above), so a fast scroll reversal can
+   never catch one of these mid-delay, still not actually having started
+   its exit, and re-enter from a stale partial value instead of a clean
+   0. */
+body.intro-finished .hero__wordmark-for.is-visible {
   transition-delay: 0.1s;
 }
-body.intro-finished .hero__wordmark-word--2 .hero__title-exit {
+body.intro-finished .hero__wordmark-word--2 .hero__title-exit.is-visible {
   transition-delay: 0.2s;
 }
 body.intro-finished .hero__title-exit:not(.is-visible) {
@@ -1720,7 +2132,13 @@ body.intro-finished .hero__wordmark-asterisk-wrap {
   transform: none;
   transition: opacity 1.6s cubic-bezier(0.33, 1, 0.68, 1),
               transform 1.6s cubic-bezier(0.33, 1, 0.68, 1);
-  transition-delay: 0.2s;
+  /* Always instant when exiting (base rule, unscoped) — the 0.2s beat
+     below only applies when ENTERING (.is-visible), same reasoning as
+     the eyebrow/title staggers above: exiting must never have a delay
+     a fast scroll reversal could catch mid-flight, before it's actually
+     started, leaving a stale partial opacity for the next re-entrance
+     to (wrongly) start from instead of a clean 0. */
+  transition-delay: 0s;
 }
 body.intro-finished .hero__wordmark-asterisk-wrap:not(.is-visible) {
   opacity: 0;
@@ -1729,6 +2147,7 @@ body.intro-finished .hero__wordmark-asterisk-wrap:not(.is-visible) {
 body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   opacity: 1;
   transform: none;
+  transition-delay: 0.2s;
 }
 /* Nav bar: fades in while dropping down from just above its resting spot. */
 .intro-reveal--drop {
@@ -1764,30 +2183,34 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   pointer-events: none;
   z-index: 100000;
   will-change: transform;
-}
-.custom-cursor-burst {
-  display: block;
-}
-/* One-shot decelerating extra spin on click, same easing curve as the
-   hero asterisk's own intro pop-in — reads as a quick burst settling
-   back into the glyph's constant spin underneath. */
-.custom-cursor-burst.is-bursting {
-  animation: custom-cursor-burst-spin 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes custom-cursor-burst-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(720deg); }
+  /* Contrast against whatever's underneath comes from the blend mode,
+     not a JS-driven swap between 2 fixed color variants (that approach
+     needed elementFromPoint + a background-color allowlist checked on
+     every mousemove, and only ever produced one of 2 discrete colors).
+     MUST live here, on the actual position:fixed element, not on the
+     nested .custom-cursor-asterisk img — .custom-cursor-wrap creates
+     its own stacking context (position:fixed + z-index), so a
+     descendant's mix-blend-mode only blends against that LOCAL context
+     (which contains nothing but this glyph, so visibly does nothing),
+     never against the real page behind it. Confirmed with a side-by-
+     side repro: same nesting, blend-mode on the inner element showed
+     the artwork's plain unblended color; moved up to this element, it
+     correctly inverted per-background. multiply, chosen by eye from a
+     side-by-side comparison of every blend mode against all 5 palette
+     colors (difference/exclusion skewed blue-cyan against the warm
+     light backgrounds; hard-light was rejected too) — multiply keeps
+     the asterisk's own reddish-brown character while darkening
+     consistently against every background. */
+  mix-blend-mode: multiply;
 }
 .custom-cursor-asterisk {
   display: block;
-  /* Smaller than --hero-asterisk-size (clamp(28.6px, 2.86vw, 49.4px)) —
-     this is a diagnostic swap to the hero's own asterisk artwork (a
-     plain PNG, no SVG/text/getBBox involved) to test whether the
-     "orbiting" is inherent to the cursor's position-lag itself rather
-     than anything specific to the SVG-text glyph it replaces. */
-  width: 26px;
+  width: 18px;
   height: auto;
-  animation: hero-asterisk-spin 8s linear infinite;
+  /* No animation here — rotation is JS-driven (see raf() in
+     initCustomCursor(), main.js) so its angular speed can react to
+     mouse movement speed, which a fixed-duration CSS animation can't
+     do without an abrupt phase jump every time the duration changes. */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1796,8 +2219,8 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   .feature-banner,
   .quote-block,
   .publication-card,
-  .partners__logo,
   .split-cta,
+  .partners,
   .intro-reveal,
   .intro-reveal--slide,
   .intro-reveal--slide-slow,
@@ -1805,6 +2228,10 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   .mosaic-reveal,
   .mosaic-reveal--slide { transition: none; opacity: 1; transform: none; }
   .image-mosaic__mask { opacity: 0; }
+  /* Roles grid hover swap still needs to toggle (opacity/transform still
+     differ between rest and :hover), just instantly rather than sliding. */
+  .square__role,
+  .square__role-description { transition: none; }
   .intro-splash,
   .intro-splash__asterisk-wrap { animation: none; opacity: 0; visibility: hidden; }
   .hero__wordmark-asterisk-wrap { animation: none; opacity: 1; transform: none; }

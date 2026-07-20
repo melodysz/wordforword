@@ -22,108 +22,44 @@ document.addEventListener("DOMContentLoaded", () => {
   initHeroEyebrowExit();
   initMarqueeAsterisks();
   initCustomCursor();
+  initRoleTapReveal();
 });
-
-// Builds a small SVG asterisk "object" — used for both the marquee
-// separators and the custom cursor. Deliberately NOT a plain text
-// character, and deliberately NOT centered via a hardcoded correction
-// ratio either (an earlier version nudged it by a fixed "9% of
-// font-size", measured once in one dev environment — that's fragile:
-// it silently depends on the exact font metrics that happen to be
-// active when it was measured, which can differ if the web font hasn't
-// finished loading yet, or renders with different hinting in a
-// different browser/OS, etc. correctASteriskCentering() below instead
-// measures the ACTUAL rendered glyph via getBBox(), on the real page,
-// after fonts are confirmed loaded — correct by construction regardless
-// of environment, not by assumption.
-//
-// The viewBox size is DERIVED from fontSize (not a fixed number the
-// caller has to separately remember to match via CSS) — an earlier
-// version hardcoded viewBox to "0 0 32 32" while the CSS sized the
-// element differently (28px, or 0.7em elsewhere), silently scaling the
-// whole glyph down by that mismatch ratio. Setting width/height
-// attributes directly on the <svg>, equal to the viewBox, makes the
-// box's intrinsic rendered size self-consistent — no CSS width/height
-// should be added for this element anywhere it's used.
-function makeAsteriskSVG(fontSize) {
-  const NS = "http://www.w3.org/2000/svg";
-  const box = fontSize * 1.3; // margin so the glyph's arms aren't clipped
-  const svg = document.createElementNS(NS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${box} ${box}`);
-  svg.setAttribute("width", box);
-  svg.setAttribute("height", box);
-  svg.setAttribute("aria-hidden", "true");
-  const text = document.createElementNS(NS, "text");
-  text.setAttribute("x", box / 2);
-  text.setAttribute("y", box / 2);
-  text.setAttribute("text-anchor", "middle");
-  text.setAttribute("dominant-baseline", "middle");
-  text.setAttribute("font-size", `${fontSize}`);
-  text.textContent = "*";
-  svg.appendChild(text);
-  return svg;
-}
-
-// Call once the SVG from makeAsteriskSVG() is actually attached to the
-// live document — measures the glyph's TRUE rendered bounding box and
-// nudges it (dx/dy) so its ink center, not just its nominal x/y anchor
-// point, lands exactly on the box's center. Waits for document.fonts
-// .ready first: measuring before the web font swaps in would bake in a
-// correction for the FALLBACK font's metrics instead, which silently
-// breaks again the instant the real font loads in and the glyph's
-// actual shape changes underneath the (by-then-wrong) correction.
-function correctAsteriskCentering(svg) {
-  const text = svg.querySelector("text");
-  const box = parseFloat(svg.getAttribute("width"));
-  document.fonts.ready.then(() => {
-    try {
-      const bbox = text.getBBox();
-      const dx = box / 2 - (bbox.x + bbox.width / 2);
-      const dy = box / 2 - (bbox.y + bbox.height / 2);
-      text.setAttribute("dx", `${dx}`);
-      text.setAttribute("dy", `${dy}`);
-    } catch (e) {
-      // getBBox() can throw if the element isn't actually rendered yet
-      // (e.g. a display:none ancestor) — leave it at its default
-      // (uncorrected but still roughly-centered) position.
-    }
-  });
-}
 
 // vertical-align: middle centers an inline-block box against the
 // font's X-HEIGHT (baseline + half the lowercase-letter height) — not
 // its cap-height. The marquee text is all-caps, so a viewer reads
 // "centered" as "centered against the capital letters," and x-height
 // sits measurably below cap-height for any font. That gap is exactly
-// why a vertical-align:middle asterisk still reads as "too low" no
-// matter how precisely its own ink is centered within its own SVG box
-// (correctAsteriskCentering fixes THAT, separate problem, one level in)
-// — the box's POSITION on the line was still wrong. Fixed here by
-// abandoning vertical-align's keyword-based guess entirely: measure the
-// track's actual rendered cap-height via canvas (real ink metrics, not
-// an assumed ratio — same reasoning as correctAsteriskCentering using
-// getBBox instead of a hardcoded percentage), then shift the glyph by
-// exactly the difference between where vertical-align: baseline
-// naturally puts its center (box/2 above the baseline) and where the
-// capital letters' own visual center actually sits (capHeight/2 above
-// the baseline).
-function alignAsteriskToCapHeight(span, svg, track) {
-  const box = parseFloat(svg.getAttribute("height"));
+// why a vertical-align:middle asterisk reads as "too low" no matter how
+// well-centered the glyph itself is within its own box — the box's
+// POSITION on the line was the wrong thing. Fixed by abandoning
+// vertical-align's keyword-based guess entirely: measure the track's
+// actual rendered cap-height via canvas (real ink metrics, not an
+// assumed ratio), then shift the glyph by exactly the difference
+// between where vertical-align: baseline naturally puts its center
+// (boxHeight/2 above the baseline) and where the capital letters' own
+// visual center actually sits (capHeight/2 above the baseline).
+function alignAsteriskToCapHeight(span, boxHeight, track) {
   document.fonts.ready.then(() => {
     const ctx = document.createElement("canvas").getContext("2d");
     const trackStyle = getComputedStyle(track);
     ctx.font = trackStyle.font || `${trackStyle.fontSize} ${trackStyle.fontFamily}`;
     const capHeight = ctx.measureText("H").actualBoundingBoxAscent;
-    const shift = box / 2 - capHeight / 2;
+    const shift = boxHeight / 2 - capHeight / 2;
     span.style.transform = `translateY(${shift}px)`;
   });
 }
 
-// Replaces the plain "*" characters in each marquee strip with the same
-// precisely-centered SVG object (see makeAsteriskSVG above) instead of
-// a bare text glyph — splitting on the literal "*" preserves the
-// surrounding &nbsp; spacing already baked into the HTML (it survives
-// as plain U+00A0 characters in the split text nodes).
+// Replaces the plain "*" characters in each marquee strip with the
+// brown asterisk artwork (assets/images/Brown asterisk.png) instead of
+// a bare text glyph or an SVG-built one — a plain raster image sidesteps
+// font-metric/line-height quirks (baseline, x-height, glyph ink
+// centering) entirely, leaving only the one real remaining problem
+// (the box's vertical POSITION within the line), handled by
+// alignAsteriskToCapHeight above. Splitting on the literal "*" preserves
+// the surrounding &nbsp; spacing already baked into the HTML (it
+// survives as plain U+00A0 characters in the split text nodes).
+const MARQUEE_ASTERISK_SIZE = 18;
 function initMarqueeAsterisks() {
   const tracks = document.querySelectorAll(".marquee-banner__track");
   for (const track of tracks) {
@@ -134,11 +70,12 @@ function initMarqueeAsterisks() {
       if (i < parts.length - 1) {
         const span = document.createElement("span");
         span.className = "marquee-asterisk";
-        const svg = makeAsteriskSVG(28);
-        span.appendChild(svg);
+        const img = document.createElement("img");
+        img.src = "assets/images/Brown asterisk.png";
+        img.alt = "";
+        span.appendChild(img);
         track.appendChild(span);
-        correctAsteriskCentering(svg);
-        alignAsteriskToCapHeight(span, svg, track);
+        alignAsteriskToCapHeight(span, MARQUEE_ASTERISK_SIZE, track);
       }
     }
   }
@@ -149,6 +86,34 @@ function initMarqueeAsterisks() {
 // ensures the initial opacity:0 state is painted first, so this actually
 // transitions instead of jumping straight to visible.
 //
+// Every --intro-delay is corrected here for time already spent waiting
+// on external resources (Google Fonts, the Lenis CDN script — see the
+// bare <script> at the very top of <head>) before this function even
+// got to run: this function itself only runs on DOMContentLoaded, which
+// doesn't fire until every blocking script — including that 3rd-party
+// one — has finished loading. On a warm/cached load that's near-
+// instant, so it's invisible; on a cold first load (no cached DNS/TLS
+// to those hosts yet) it can take real time, and without this
+// correction that entire delay gets ADDED on top of each element's
+// already-intended --intro-delay, even though the splash's own
+// CSS-only timeline (driven by animation-delay, not JS/DOMContentLoaded)
+// finishes on schedule regardless — the hero title would then visibly
+// lag the now-long-gone splash. Subtracting the elapsed time keeps every
+// element anchored to real wall-clock time since navigation start
+// instead of "whenever DOMContentLoaded happened to fire."
+//
+// (A first-paint-anchored version of this correction was tried instead
+// of DOMContentLoaded, reasoning that DOMContentLoaded overcounts the
+// script-fetch time paint never waited on — but that's backwards: the
+// countdown this sets up can only ever start counting once THIS
+// FUNCTION runs, which is itself gated by DOMContentLoaded regardless
+// of what value gets written to --intro-delay. Anchoring the
+// subtraction to paint time instead left the full original delay in
+// place on top of a still-late DOMContentLoaded, measurably reproducing
+// the ORIGINAL too-late bug on the same slow-Lenis test this comment
+// block's fix was verified against — reverted back to DOMContentLoaded
+// for that reason.)
+//
 // Also marks <body> once the whole sequence is genuinely done — see
 // .hero__eyebrow-line's CSS: its scroll-linked exit state is scoped to
 // body.intro-finished specifically so a fast scroll early on can't
@@ -157,15 +122,22 @@ function initMarqueeAsterisks() {
 // FROM below to arrive, vs. sliding further up to exit). CRITICAL: this
 // timeout must fire AFTER the LATEST --intro-delay + its own
 // transition-duration anywhere on the page finishes — currently the
-// eyebrow lines themselves (4870ms delay + 1.6s slide-slow = 6470ms).
-// Firing this too early cuts that transition off mid-flight (changing
-// transition-delay while a transition is still running effectively
-// breaks it), which looked like "the eyebrows don't move at all" when
-// this was hardcoded to 5000ms. Update this number if those delays
-// change again.
+// eyebrow lines themselves (4870ms delay + 1.6s slide-slow = 6470ms,
+// +180ms buffer = 6650ms). Firing this too early cuts that transition
+// off mid-flight (changing transition-delay while a transition is still
+// running effectively breaks it), which looked like "the eyebrows don't
+// move at all" when this was hardcoded to 5000ms. Update this number if
+// those delays change again — it gets the same elapsed-time correction
+// as everything else above.
 function initIntroReveal() {
   const introEls = document.querySelectorAll(".intro-reveal");
   if (!introEls.length) return;
+
+  const elapsed = Date.now() - (window.__pageLoadStart || Date.now());
+  for (const el of introEls) {
+    const original = parseFloat(el.style.getPropertyValue("--intro-delay")) || 0;
+    el.style.setProperty("--intro-delay", `${Math.max(0, original - elapsed)}ms`);
+  }
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -198,7 +170,7 @@ function initIntroReveal() {
     // initHeroEyebrowExit() listens for this to do its FIRST sync of the
     // hero asterisk specifically — see that function for why.
     document.dispatchEvent(new CustomEvent("introfinished", { detail: { asteriskVisible } }));
-  }, 6650);
+  }, Math.max(0, 6650 - elapsed));
 }
 
 // Highlights the nav link for the page currently loaded (each link is a
@@ -220,6 +192,17 @@ function initNavHighlight() {
   };
 
   placeIndicator();
+  // Re-measure once the real web font (Freight, a local file, not
+  // preloaded) is actually in — if it's still showing its fallback at
+  // the point this function first runs, the link measures at the
+  // FALLBACK font's width, and the indicator gets sized/positioned to
+  // match that. Once Freight swaps in moments later, the link reflows
+  // to its real (usually narrower) width, but nothing re-measures the
+  // indicator, leaving it visibly off — intermittently, since whether
+  // the swap has already happened by the time this runs depends on
+  // font-cache state, same root cause as the earlier cold-load timing
+  // bug elsewhere in this file.
+  document.fonts.ready.then(placeIndicator);
   window.addEventListener("resize", placeIndicator);
 }
 
@@ -278,9 +261,17 @@ function initLuxuryScroll() {
 // resets once it's a full viewport-height past whichever edge it
 // exited — comfortably lenient, not "reset the instant it's offscreen."
 function initRevealOnScroll() {
-  const targets = document.querySelectorAll(
-    ".square, .image-mosaic__mask, .feature-banner, .quote-block, .publication-card, .partners__logo, .split-cta"
+  const staggeredTargets = document.querySelectorAll(
+    ".square, .image-mosaic__mask, .feature-banner, .quote-block, .publication-card, .split-cta"
   );
+  // .partners reveals as ONE unit (slide up + fade, like the hero
+  // elements — see .mosaic-reveal/.mosaic-reveal--slide on it in
+  // index.html) instead of tile-by-tile per logo, so it's tracked
+  // separately: it still needs checkAll() below to toggle its
+  // visibility, but must NEVER get a --reveal-delay from the stagger
+  // loop (that's what caused the old per-logo cascade).
+  const singleUnitTargets = document.querySelectorAll(".partners");
+  const targets = [...staggeredTargets, ...singleUnitTargets];
   if (!targets.length) return;
 
   // Stagger is normalized to a shared TOTAL cascade span per group
@@ -289,17 +280,16 @@ function initRevealOnScroll() {
   // section 1's squares span 4 GRID ROWS, so most of their "tile by
   // tile" cascade already comes from tiles at different rows entering
   // the viewport at genuinely different scroll moments, seconds apart;
-  // the footer (3 cells) and partner logos (3 logos) are single ROWS,
-  // so all siblings enter the viewport in the exact same instant — the
-  // artificial per-item delay is the ONLY thing that can stagger them
-  // at all. A flat 40-100ms/step gave section 1's 10+ siblings a full
-  // second of spread while giving these 3-item rows almost none —
-  // reported as the footer/partners "acting like one long rectangle"
-  // instead of tiles. Normalizing to a fixed total span means EVERY
-  // group gets a comparably obvious cascade regardless of how many
-  // siblings it has.
+  // the footer (3 cells) is a single ROW, so all siblings enter the
+  // viewport in the exact same instant — the artificial per-item delay
+  // is the ONLY thing that can stagger them at all. A flat 40-100ms/step
+  // gave section 1's 10+ siblings a full second of spread while giving
+  // a 3-item row almost none — reported as the footer "acting like one
+  // long rectangle" instead of tiles. Normalizing to a fixed total span
+  // means every group gets a comparably obvious cascade regardless of
+  // how many siblings it has.
   const CASCADE_SPAN_MS = 600;
-  for (const el of targets) {
+  for (const el of staggeredTargets) {
     const siblings = Array.from(el.parentElement.children);
     const index = siblings.indexOf(el);
     const step = siblings.length > 1 ? CASCADE_SPAN_MS / (siblings.length - 1) : 0;
@@ -448,7 +438,7 @@ function initMosaicReveal() {
   const mosaics = document.querySelectorAll(".image-mosaic");
   if (!mosaics.length) return;
 
-  const PAUSE_MS = 150; // "a slight delay" between each handoff
+  const PAUSE_MS = 0; // was a deliberate 150ms "beat" between handoffs — removed so the caption ("Read our latest issue!") triggers as soon as its prerequisite genuinely finishes, not later
 
   for (const mosaic of mosaics) {
     const masks = mosaic.querySelectorAll(".image-mosaic__mask");
@@ -505,73 +495,83 @@ function initCustomCursor() {
   const wrap = document.createElement("div");
   wrap.className = "custom-cursor-wrap";
   wrap.setAttribute("aria-hidden", "true");
-  // Separate layer between wrap (position + hover scale) and the glyph
-  // (continuous spin): holds only the one-shot, re-triggerable click-burst
-  // spin, for the same reason position/spin/burst can't share one element
-  // — each is its own `animation`/JS-driven `transform`, and those replace
-  // rather than compose when stacked on a single element.
-  const burst = document.createElement("div");
-  burst.className = "custom-cursor-burst";
-  // Diagnostic swap: reuse the hero's own asterisk artwork (a plain PNG,
-  // rotated via the same hero-asterisk-spin animation it already uses in
-  // the hero) instead of the SVG-text glyph built by makeAsteriskSVG.
-  // If this still orbits while trailing the cursor, that isolates the
-  // cause to the position-lag itself rather than anything specific to
-  // the SVG/text centering path.
-  const ASTERISK_SRC_DARK_BG = "assets/images/Asterisk - Default, Cream.png";
-  const ASTERISK_SRC_LIGHT_BG = "assets/images/Asterisk - Default.png";
+  // Reuses the hero's own asterisk artwork (a plain PNG, rotated via
+  // the same hero-asterisk-spin animation the hero itself uses) rather
+  // than building a glyph from an SVG <text> element. Contrast against
+  // whatever background it's over comes from mix-blend-mode (see CSS),
+  // not a JS-driven src swap between 2 fixed color variants — the swap
+  // approach needed elementFromPoint + a background-color allowlist on
+  // every mousemove, and the transition between the 2 fixed colors was
+  // an abrupt, discrete jump rather than a true per-pixel contrast fix.
   const glyph = document.createElement("img");
-  glyph.src = ASTERISK_SRC_LIGHT_BG;
+  glyph.src = "assets/images/Asterisk - Default.png";
   glyph.alt = "";
   glyph.className = "custom-cursor-asterisk";
-  burst.appendChild(glyph);
-  wrap.appendChild(burst);
+  wrap.appendChild(glyph);
   document.body.appendChild(wrap);
 
   // Offset toward the tail end of a standard pointer (which points up-
   // left, tip at the exact mouse position) — down-right of the cursor,
-  // not on top of it. Small — this should read as ATTACHED to the
-  // cursor, not floating off near it. Genuinely small, too: the
-  // translate(-50%,-50%) below makes (curX+OFFSET_X, curY+OFFSET_Y) the
-  // WRAP'S OWN CENTER, not its top-left corner — without that, this
+  // just barely overlapping it rather than sitting right underneath.
+  // The translate(-50%,-50%) below makes (curX+OFFSET_X, curY+OFFSET_Y)
+  // the WRAP'S OWN CENTER, not its top-left corner — without that, this
   // offset would need to separately account for half the glyph's own
-  // (now much bigger) size just to keep the visible asterisk close to
-  // the cursor, and silently drift further away every time the glyph's
-  // size changes.
-  const OFFSET_X = 10;
-  const OFFSET_Y = 10;
+  // size just to keep the visible asterisk positioned consistently, and
+  // silently drift further away every time the glyph's size changes.
+  const OFFSET_X = 20;
+  const OFFSET_Y = 24;
   // Lower = more lag/"drag" before catching up to the real cursor.
-  const LERP = 0.4;
-
-  // rgb() strings for the palette's 2 light colors — cream (page/nav
-  // background) and tan (checker/square backgrounds) — everything else
-  // (dark, grey, red) counts as a dark/saturated backdrop needing the
-  // tan asterisk instead of the red one for contrast.
-  const LIGHT_BG_RGB = ["rgb(249, 245, 236)", "rgb(241, 215, 188)"];
-
-  function srcForPoint(x, y) {
-    let node = document.elementFromPoint(x, y);
-    while (node && node !== document.documentElement) {
-      const bg = getComputedStyle(node).backgroundColor;
-      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-        return LIGHT_BG_RGB.includes(bg) ? ASTERISK_SRC_LIGHT_BG : ASTERISK_SRC_DARK_BG;
-      }
-      node = node.parentElement;
-    }
-    // Fell through to <html> with no solid background found anywhere —
-    // the page's own background (cream) is what's actually showing.
-    return ASTERISK_SRC_LIGHT_BG;
-  }
+  // Was bumped to 0.4 earlier to fight a perceived "orbiting" during
+  // circular mouse motion — that turned out to be a red herring (the
+  // user confirmed live it wasn't actually visible), and the real bug
+  // was the glyph.src reassignment thrashing every mousemove event
+  // elsewhere in this function (now fixed), which was starving this
+  // rAF loop of frames and made the lag look like it had disappeared
+  // entirely. Reverted to the original, intentionally floaty value.
+  const LERP = 0.14;
 
   // Real, actually-clickable elements only — not decorative hover targets
   // like .diamond-cta or .square, which already use cursor: default.
   function isClickablePoint(x, y) {
     const node = document.elementFromPoint(x, y);
-    return !!(node && node.closest("a[href], button"));
+    return !!node?.closest("a[href], button");
   }
 
   const HOVER_SCALE = 1.5;
   const SCALE_LERP = 0.25;
+
+  // Spin speed reacts to how fast the REAL mouse is moving (not the
+  // lagged follower position — that would add a second delay on top of
+  // this one and feel sluggish to react). BASE_DEG_PER_SEC matches the
+  // old fixed "8s per rotation" CSS animation this replaces. A fast flick
+  // adds up to MAX_BOOST_DEG_PER_SEC on top of that, smoothed by
+  // SPIN_LERP so it eases in on a flick and back out again once the
+  // mouse slows — the same lerp-toward-a-target pattern already used for
+  // position and hover-scale above, just applied to angular speed.
+  const BASE_DEG_PER_SEC = 45;
+  const SPEED_TO_BOOST = 0.15; // extra deg/sec of spin per px/sec of mouse speed
+  const MAX_BOOST_DEG_PER_SEC = 650;
+  const SPIN_LERP = 0.35;
+  // At 18px, while ALSO chasing a fast-moving cursor, a pure rotation-
+  // speed difference isn't perceivable on its own (confirmed: isolated
+  // and enlarged, 45deg/sec vs 650deg/sec is obviously different; on
+  // the real small, moving glyph it wasn't). Pairing the spin-up with a
+  // size pulse — reusing angularSpeed, already smoothed by SPIN_LERP
+  // above, as the single source of truth for "how sped up right now" —
+  // makes the reaction to speed unmistakable at actual cursor size.
+  const SPEED_SCALE_BOOST = 0.6; // extra scale at max angular boost
+
+  // Click burst: adds straight into the SAME per-frame angular-speed
+  // system as the mouse-flick boost above, instead of a separately
+  // `animation`-driven layer with its own fixed duration — that older
+  // approach (a CSS keyframe on a separate wrapper div) had a hard stop
+  // the instant the animation ended, which read as an abrupt cut rather
+  // than settling into the constant spin. clickBoost instead lerps
+  // toward 0 every frame, same as everything else here, so it has no
+  // "end" to be abrupt about — it just asymptotically fades into
+  // whatever angularSpeed already is.
+  const CLICK_BOOST_DEG_PER_SEC = 3600; // instantaneous spike per click
+  const CLICK_BOOST_LERP = 0.08; // lower = longer tail before it's imperceptible
 
   let mouseX = -100;
   let mouseY = -100;
@@ -580,6 +580,12 @@ function initCustomCursor() {
   let started = false;
   let targetScale = 1;
   let curScale = 1;
+  let prevMouseX = mouseX;
+  let prevMouseY = mouseY;
+  let angularSpeed = BASE_DEG_PER_SEC;
+  let clickBoost = 0;
+  let rotationDeg = 0;
+  let lastFrameTime = null;
 
   window.addEventListener(
     "mousemove",
@@ -591,29 +597,38 @@ function initCustomCursor() {
         curY = mouseY;
         started = true;
       }
-      const wantedSrc = srcForPoint(e.clientX, e.clientY);
-      if (!glyph.src.endsWith(wantedSrc)) glyph.src = wantedSrc;
       targetScale = isClickablePoint(e.clientX, e.clientY) ? HOVER_SCALE : 1;
     },
     { passive: true }
   );
 
-  // Quick extra spin on click, layered on the burst element so it composes
-  // with (rather than fights) the glyph's own continuous spin underneath.
-  // Removing then re-adding the class forces a reflow in between, which
-  // restarts the CSS animation from scratch on every click, including
-  // rapid repeat clicks.
+  // Additive (not reset) — a rapid double-click stacks a second spike on
+  // top of whatever's left of the first instead of restarting it, so
+  // repeat clicks feel like they're compounding rather than each one
+  // clipping the last.
   window.addEventListener(
     "click",
     () => {
-      burst.classList.remove("is-bursting");
-      void burst.offsetWidth;
-      burst.classList.add("is-bursting");
+      clickBoost += CLICK_BOOST_DEG_PER_SEC;
     },
     { passive: true }
   );
 
-  function raf() {
+  function raf(time) {
+    if (lastFrameTime === null) lastFrameTime = time;
+    const dt = (time - lastFrameTime) / 1000;
+    lastFrameTime = time;
+
+    const mouseSpeed = dt > 0 ? Math.hypot(mouseX - prevMouseX, mouseY - prevMouseY) / dt : 0;
+    prevMouseX = mouseX;
+    prevMouseY = mouseY;
+    const targetAngularSpeed = BASE_DEG_PER_SEC + Math.min(mouseSpeed * SPEED_TO_BOOST, MAX_BOOST_DEG_PER_SEC);
+    angularSpeed += (targetAngularSpeed - angularSpeed) * SPIN_LERP;
+    clickBoost += (0 - clickBoost) * CLICK_BOOST_LERP;
+    rotationDeg = (rotationDeg + (angularSpeed + clickBoost) * dt) % 360;
+    const speedScale = 1 + ((angularSpeed - BASE_DEG_PER_SEC) / MAX_BOOST_DEG_PER_SEC) * SPEED_SCALE_BOOST;
+    glyph.style.transform = `rotate(${rotationDeg}deg) scale(${speedScale})`;
+
     curX += (mouseX - curX) * LERP;
     curY += (mouseY - curY) * LERP;
     curScale += (targetScale - curScale) * SCALE_LERP;
@@ -621,4 +636,25 @@ function initCustomCursor() {
     requestAnimationFrame(raf);
   }
   requestAnimationFrame(raf);
+}
+
+// Roles grid (Interviewer/Columnist/Editor/Designer) reveals its
+// description on :hover in CSS — no help at all on a device with no
+// real hover. Gated to hover-incapable devices only (same feature
+// query initCustomCursor() uses, just negated): on a real mouse, hover
+// already does this, and layering a click toggle on top there too
+// would let a tap-then-move-away leave a tile stuck open. Listens on
+// the whole tile, not just .square__role-tap-btn (that's purely a
+// visual "tap me" affordance, styled in style.css) — a bigger touch
+// target than a 32px diamond, and any tap inside the tile (including
+// the button itself) bubbles up to this one listener.
+function initRoleTapReveal() {
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+  const tiles = document.querySelectorAll(".square--role-reveal");
+  for (const tile of tiles) {
+    tile.addEventListener("click", () => {
+      tile.classList.toggle("is-tapped");
+    });
+  }
 }
