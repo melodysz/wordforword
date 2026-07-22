@@ -10,12 +10,43 @@
        back out of the intro timing — see the comment on
        initIntroReveal() for why that matters. -->
   <script>window.__pageLoadStart = Date.now();</script>
+  <!-- Asterisks 2/3/4 in the intro splash are CSS mask-image sources
+       (see .intro-splash__asterisk--2/3/4 in style.css), not <img> tags
+       — the browser's preload scanner discovers a plain <img src> almost
+       immediately while parsing the HTML, but a mask-image referenced
+       from a stylesheet isn't fetched until the CSS is parsed AND the
+       matching element is about to be painted, which can land AFTER
+       that screen's own ~350ms display window has already passed
+       (confirmed: under throttled network conditions, these 3 files
+       hadn't even started downloading 3 seconds in, while the real
+       <img>-based asterisks loaded in ~160ms).
+
+       Tried <link rel="preload" as="image"> first — still reported
+       missing afterward. Some Chromium versions have known
+       inconsistencies matching a preloaded resource to a mask-image
+       CONSUMER specifically (the "as" type-matching machinery is far
+       better exercised for the vastly more common background-image/img
+       cases), which can silently re-fetch instead of reusing the
+       preload, losing the whole benefit. Forcing the fetch directly
+       with a real Image() object sidesteps that entirely — it just
+       populates the browser's normal HTTP cache by URL, which every
+       consumer (mask-image included) reads from regardless of how the
+       bytes got there. Placed as the very first thing after
+       __pageLoadStart, before even the external font/CDN requests
+       below, so it starts as early as anything on the page possibly
+       can. -->
+  <script>
+    for (const n of [2, 3, 4]) {
+      const img = new Image();
+      img.src = `assets/images/Asterisk ${n}.png`;
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <!-- "Freight" is a licensed font (not on Google Fonts) — add your own @font-face
        for "Freight Text Pro" in css/style.css once you have the font files. -->
-  <link rel="stylesheet" href="css/style.css?v=74" />
+  <link rel="stylesheet" href="css/style.css?v=107" />
 </head>
 <body>
 
@@ -28,7 +59,7 @@
        color per screen, Monogatari-title-card style) — instead, the
        asterisk + caption COLOR itself changes screen to screen: red
        (01, "verbatim.") / blue — this project's informal name for
-       --color-grey (02, "to the letter.") / darker beige, --color-tan-
+       --color-grey (02, "voice.") / darker beige, --color-tan-
        dark / DBB388, a one-off NOT in the 5-color swatch (03,
        "testimony.") / brown, --color-dark (04, "truth."). Screen 00
        ("Word for Word.", the real logo) is unchanged: red bg, cream
@@ -75,7 +106,7 @@
         <span class="intro-splash__caption-line2">(01)</span>
       </p>
       <p class="intro-splash__caption intro-splash__caption--2">
-        <span class="intro-splash__caption-line1">to the letter.</span>
+        <span class="intro-splash__caption-line1">voice.</span>
         <span class="intro-splash__caption-line2">(02)</span>
       </p>
       <p class="intro-splash__caption intro-splash__caption--3">
@@ -129,6 +160,25 @@
        shares the same slow "easeOutCubic" curve
        (fast start, slow finish that stays visible the whole way; see
        .intro-reveal--slide-slow). -->
+  <!-- .nav__item--publications is the dropdown trigger AND .nav__dropdown's
+       own containing block — nested directly inside the <li> (not a
+       sibling of .nav living elsewhere in .site-header, as an earlier
+       pass tried) now that the dropdown is a left-aligned vertical list
+       under "Publications" rather than a row centered under the FULL
+       bar: nesting means top:100%/left:0 resolve against the <li> itself
+       (which has its own position:relative), sidestepping .nav's own
+       transform:translateY(-50%) entirely, AND means hovering the
+       dropdown is just hovering a descendant of the trigger — no gap
+       between the two, no separate bridge/second :has() clause needed to
+       keep it open while the cursor moves from one into the other. The
+       asterisk after "Publications" is a plain text character (matching
+       the site's own "*" convention elsewhere, e.g. the role squares)
+       indicating more content is available, not a separate interactive
+       element. "Editions" points back at THIS page's own #publications
+       section (the existing hand-maintained issue-cover cards) rather
+       than the generated publications.html — that page is only for the
+       article-publishing system's 4 categories, not whole-issue
+       editions, which are a separate, already-existing concept. -->
   <header class="site-header intro-reveal intro-reveal--drop" style="--intro-delay: 4870ms;">
     <a href="index.html" class="nav__logo">
       <img src="assets/images/Logo.png" alt="Word for Word logo" />
@@ -136,13 +186,29 @@
     <nav class="nav">
       <ul class="nav__links">
         <li><a href="index.html">Overview</a></li>
-        <li><a href="publications.html">Publications</a></li>
+        <li class="nav__item--publications">
+          <a href="publications.html">Publications*</a>
+          <div class="nav__dropdown">
+            <a href="index.html#publications"><span class="nav__dropdown-asterisk">*</span>Editions</a>
+            <a href="publications.html#interviews"><span class="nav__dropdown-asterisk">*</span>Interviews</a>
+            <a href="publications.html#essays"><span class="nav__dropdown-asterisk">*</span>Essays</a>
+            <a href="publications.html#narratives"><span class="nav__dropdown-asterisk">*</span>Narratives</a>
+            <a href="publications.html#outreach"><span class="nav__dropdown-asterisk">*</span>Outreach</a>
+          </div>
+        </li>
         <li><a href="about.html">About Us</a></li>
         <li><a href="get-involved.html">Get Involved</a></li>
         <li class="nav__indicator-slot" aria-hidden="true"><span class="nav__indicator"></span></li>
       </ul>
     </nav>
   </header>
+  <!-- Dims the page behind the header while the Publications dropdown
+       is open — a sibling of .site-header (not a child) so the general
+       sibling combinator below can react to the SAME .site-header
+       :has(...) condition without duplicating the hover logic on a 3rd
+       element. Purely decorative (pointer-events:none) — nothing to
+       click through to dismiss yet, this is hover-only for now. -->
+  <div class="nav-dim-overlay" aria-hidden="true"></div>
 
   <!-- Fixed viewport frame: starts essentially at the bottom of the nav
        bar and runs to the bottom of the screen, holding at any scroll
@@ -185,7 +251,7 @@
     <div class="hero__wordmark-wrap">
       <div class="hero__wordmark-placeholder" aria-hidden="true">
         <span class="hero__wordmark-word hero__wordmark-word--1"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3220ms;">Word</span></span>
-        <span class="hero__wordmark-word hero__wordmark-word--2"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3700ms;">Word</span></span>
+        <span class="hero__wordmark-word hero__wordmark-word--2"><span class="hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3700ms;">Wor<span class="hero__wordmark-d-anchor">d</span></span></span>
       </div>
       <div class="hero__wordmark-for-wrap" aria-hidden="true">
         <img class="hero__wordmark-for hero__title-exit intro-reveal intro-reveal--slide-slow" style="--intro-delay: 3350ms;" src="assets/images/Homepage hero title.png" alt="" />
@@ -293,7 +359,7 @@
         </div>
       </div>
 
-      <div class="square square--red square--split" style="grid-column: 3; grid-row: 2;">
+      <div class="square square--red square--split square--pad-lg" style="grid-column: 3; grid-row: 2;">
         <p class="square__body">We&rsquo;re Penn&rsquo;s journal of narrative, here to explore how medicine and humanities intersect.<sup>*</sup></p>
         <p class="square__footnote">*Still curious?</p>
       </div>
@@ -361,22 +427,22 @@
          main.js) toggles the same reveal :hover already drives on
          desktop, via a plain .is-tapped class. -->
     <section class="square-grid square-grid--4col square-grid--rows-2">
-      <div class="square square--red square--role-reveal">
+      <div class="square square--red square--role-reveal square--pad-lg">
         <h3 class="square__role square__role--display-italic">Interviewer*</h3>
         <button type="button" class="square__role-tap-btn" aria-label="Show details for Interviewer"><span aria-hidden="true">*</span></button>
         <p class="square__role-description">*Interview individuals with experiences in medicine and the humanities, and shape those conversations into written narratives.</p>
       </div>
-      <div class="square square--tan square--role-reveal">
+      <div class="square square--tan square--role-reveal square--pad-lg">
         <h3 class="square__role square__role--caps">Columnist*</h3>
         <button type="button" class="square__role-tap-btn" aria-label="Show details for Columnist"><span aria-hidden="true">*</span></button>
         <p class="square__role-description">*Create narratives on the human side of healthcare, with freedom to write book reviews, opinions, poetry, prose, or analysis.</p>
       </div>
-      <div class="square square--grey square--role-reveal">
+      <div class="square square--grey square--role-reveal square--pad-lg">
         <h3 class="square__role square__role--display">Editor*</h3>
         <button type="button" class="square__role-tap-btn" aria-label="Show details for Editor"><span aria-hidden="true">*</span></button>
         <p class="square__role-description">*Work closely with columnists and interviewers to refine clarity, structure, and flow, while respecting the writer&rsquo;s intent.</p>
       </div>
-      <div class="square square--dark square--role-reveal">
+      <div class="square square--dark square--role-reveal square--pad-lg">
         <h3 class="square__role square__role--script">Designer*</h3>
         <button type="button" class="square__role-tap-btn" aria-label="Show details for Designer"><span aria-hidden="true">*</span></button>
         <p class="square__role-description">*Translate narrative into visual form, illustrating written pieces in the journal&rsquo;s signature fine-arts aesthetic.</p>
@@ -406,10 +472,26 @@
     </section>
 
     <!-- ============ GUEST PUBLICATION CTA ============ -->
+    <!-- Reveal here is a deliberate 3-step CHAIN (see initSplitCtaReveal()
+         in main.js), not independent scroll triggers: the 4 illustration
+         tiles fade in tile-by-tile first, then once the LAST tile's own
+         transition genuinely finishes, the artwork slides up + fades in,
+         then once ITS transition finishes, the 4 text lines below cascade
+         in line-by-line. Only the tiles are scroll-tracked (added to
+         initRevealOnScroll()'s targets); the artwork and text lines have
+         no scroll trigger of their own — they exist purely to be chained
+         to, same pattern as .image-mosaic__scrim -> .image-mosaic__caption. -->
     <section class="split-cta">
       <div class="split-cta__text">
-        <p>Besides applying to be a club member, there are other ways to participate in Word for Word&rsquo;s mission.</p>
-        <div class="split-cta__cta">
+        <!-- Hardcoded as 3 separate lines (not one wrapped <p>) so each
+             can stagger in independently — same tradeoff as the hero
+             wordmark/eyebrow lines: matches the CURRENT wrap at this
+             column's tuned width, but isn't reflow-safe if that width
+             changes later. -->
+        <span class="split-cta__text-line">Besides applying to be a club member,</span>
+        <span class="split-cta__text-line">there are other ways to participate</span>
+        <span class="split-cta__text-line">in Word for Word&rsquo;s mission.</span>
+        <div class="split-cta__cta split-cta__text-line">
           <!-- Only the diamond is a real link — plain text, not a 2nd
                clickable target for the same destination. -->
           <p class="split-cta__link">Submit a guest publication.</p>
@@ -441,6 +523,21 @@
              below it) — see the width/height comments in style.css for
              why the box is sized the way it is. -->
         <div class="split-cta__illustration-wrap">
+          <!-- The visible near-black rectangle — composed of 4 real tiles
+               (2 across, 1.5 down: a full-height row of 2 + a half-height
+               row of 2) instead of one flat div, so it can reveal tile by
+               tile via the same --reveal-delay stagger the site's other
+               square-grids use. Lives in its OWN absolutely-positioned
+               layer (not directly on .split-cta__illustration-wrap) so its
+               overflow:hidden (needed to clip the tiles to the rounded
+               corners) can't also clip the artwork image below, which
+               deliberately bleeds past this box's bottom edge. -->
+          <div class="split-cta__illustration-tiles">
+            <div class="split-cta__illustration-tile"></div>
+            <div class="split-cta__illustration-tile"></div>
+            <div class="split-cta__illustration-tile"></div>
+            <div class="split-cta__illustration-tile"></div>
+          </div>
           <img class="split-cta__illustration" src="assets/images/Section 3 Artwork.png" alt="" />
           <img class="split-cta__illustration-asterisk split-cta__illustration-asterisk--small" src="assets/images/Asterisk - Default, Cream.png" alt="" />
           <img class="split-cta__illustration-asterisk split-cta__illustration-asterisk--large" src="assets/images/Asterisk - Default, Cream.png" alt="" />
@@ -525,7 +622,7 @@
       <div class="social-carousel">
         <div class="social-carousel__track">
           <div class="social-carousel__slide social-carousel__slide--first">
-            <div class="social-carousel__photo-placeholder" aria-hidden="true"></div>
+            <img class="social-carousel__photo" src="assets/images/carousel/ILLUST The Consumptive's Kiss.jpg" alt="Illustration: The Consumptive's Kiss" />
             <div class="social-carousel__scrim mosaic-reveal" aria-hidden="true"></div>
             <div class="social-carousel__masks">
               <div class="social-carousel__mask" aria-hidden="true"></div>
@@ -551,7 +648,7 @@
             </div>
           </div>
           <div class="social-carousel__slide">
-            <div class="social-carousel__photo-placeholder" aria-hidden="true"></div>
+            <img class="social-carousel__photo" src="assets/images/carousel/ILLUST The Doctor as Writer.jpg" alt="Illustration: The Doctor as Writer" />
             <div class="social-carousel__scrim" aria-hidden="true"></div>
             <p class="social-carousel__title">Caption title goes here</p>
             <p class="social-carousel__edition">Edition #</p>
@@ -567,7 +664,7 @@
             </div>
           </div>
           <div class="social-carousel__slide">
-            <div class="social-carousel__photo-placeholder" aria-hidden="true"></div>
+            <img class="social-carousel__photo" src="assets/images/carousel/ILLUST Demystifying the Hispanic Paradox.jpg" alt="Illustration: Demystifying the Hispanic Paradox" />
             <div class="social-carousel__scrim" aria-hidden="true"></div>
             <p class="social-carousel__title">Caption title goes here</p>
             <p class="social-carousel__edition">Edition #</p>
@@ -637,7 +734,7 @@
         </article>
       </div>
 
-      <a href="#" class="publications__view-more">View more
+      <a href="publications.html" class="publications__view-more">View more
         <span class="arrow-glyph">
           <img class="arrow-glyph__default" src="assets/images/Arrow, blue.png" alt="" />
         </span>
@@ -708,7 +805,19 @@
     </div>
   </footer>
 
-  <script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>
-  <script src="js/main.js?v=42"></script>
+  <!-- async + a manual "lenisready" dispatch on load: a plain blocking
+       <script> here would make a slow/blocked request to this CDN delay
+       DOMContentLoaded (and therefore the whole intro reveal, main
+       content included) for however long it takes to arrive — see
+       initLuxuryScroll() in main.js for the retry that picks it up once
+       it actually loads. -->
+  <script src="https://unpkg.com/lenis@1/dist/lenis.min.js" async onload="window.dispatchEvent(new Event('lenisready'))"></script>
+  <!-- defer: runs after parsing completes but doesn't block on it, and
+       — unlike a plain synchronous <script> here — isn't held up
+       waiting on the (potentially slow, external) Google Fonts
+       stylesheet above either, so DOMContentLoaded (and this file's own
+       intro reveal) can fire promptly regardless of how slow either of
+       those is. -->
+  <script src="js/main.js?v=57" defer></script>
 </body>
 </html>

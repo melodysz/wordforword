@@ -1,0 +1,25 @@
+    <!-- Exact copy of index.html's own <footer> — .square/.square-grid
+         are generic, page-agnostic (initRevealOnScroll() in main.js
+         queries `.square` sitewide and toggles .is-visible on scroll),
+         so reusing this verbatim works correctly on any page without
+         extra wiring. {{BASE}} substituted the same way as in
+         _header.html. -->
+    <footer id="about" class="site-footer square-grid square-grid--4col">
+      <div class="square square--checker" style="grid-column: 1; grid-row: 1; --checker-a: var(--color-dark); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+      <div class="square square--dark" style="grid-column: 2; grid-row: 1;" aria-hidden="true"></div>
+      <div class="square square--dark" style="grid-column: 3; grid-row: 1;" aria-hidden="true"></div>
+      <div class="square square--checker" style="grid-column: 4; grid-row: 1; --checker-a: var(--color-dark); --checker-b: var(--color-tan);" aria-hidden="true"></div>
+      <div class="square site-footer__center" style="grid-column: 2 / span 2; grid-row: 1;">
+        <img class="site-footer__title" src="{{BASE}}assets/images/Footer Title.png" alt="Word for Word*" />
+        <ul class="site-footer__links">
+          <li><a href="https://www.instagram.com/pennword4word/?hl=en" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a href="https://pennclubs.com/club/word-for-word/" target="_blank" rel="noopener">Penn Clubs</a></li>
+          <li><a href="mailto:wordforwordpenn@gmail.com">Email</a></li>
+        </ul>
+        <p class="site-footer__inspo">Site Inspiration: <a href="https://www.bruegel2018.at/?ref=httpster.net" target="_blank" rel="noopener">Kunsthistorisches Museum</a></p>
+        <p class="site-footer__copyright">© 2026 Word for Word | <a href="mailto:melodyserenazhang@gmail.com">melodyserenazhang@gmail.com</a></p>
+      </div>
+    </footer>
+
+    <script src="https://unpkg.com/lenis@1/dist/lenis.min.js" async onload="window.dispatchEvent(new Event('lenisready'))"></script>
+    <script src="{{BASE}}js/main.js?v={{JS_VERSION}}" defer></script>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TITLE}} — Word for Word</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{BASE}}css/style.css?v={{CSS_VERSION}}" />
+</head>
+<body>
+{{HEADER}}
+
+  <main>
+    <article class="article-page">
+      <p class="article-page__eyebrow">{{CATEGORY_UPPER}}</p>
+      <h1 class="article-page__title">{{TITLE}}</h1>
+      <p class="article-page__byline">By {{AUTHOR}}{{DATE_SUFFIX}}</p>
+
+      <div class="article-page__illustration-wrap">
+        <img src="{{ILLUSTRATION_SRC}}" alt="{{ILLUSTRATION_ALT}}" />
+{{ILLUSTRATION_CAPTION_BLOCK}}
+      </div>
+
+      <div class="article-page__body">
+{{BODY_HTML}}
+      </div>
+
+      <div class="article-page__credits">
+        <div>
+          <p class="article-page__credit-label">Author</p>
+          <p>{{AUTHOR}}</p>
+        </div>
+        <div>
+          <p class="article-page__credit-label">Editor</p>
+          <p>{{EDITOR}}</p>
+        </div>
+        <div>
+          <p class="article-page__credit-label">Designer</p>
+          <p>{{DESIGNER}}</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+{{FOOTER}}
+</body>
+</html>

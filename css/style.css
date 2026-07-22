@@ -43,6 +43,12 @@
      only: top of items unchanged, less empty space below before the
      frame begins. */
   --nav-item-center: 40px;
+  /* How tall .site-header grows to while the Publications dropdown is
+     open — tall enough to fit .nav__dropdown's own 5-item vertical list
+     (see that rule for its own sizing/padding) below the main nav row.
+     Value confirmed against the list's actual rendered height via
+     Playwright, not just estimated from font metrics. */
+  --nav-height-expanded: 312px;
 
   /* Shared by the hero asterisk (13% of .hero__wordmark-wrap's own
      clamp(220px,22vw,380px)) and the intro splash's cream asterisk —
@@ -183,40 +189,107 @@ ul { list-style: none; margin: 0; padding: 0; }
      anchor timeout in main.js is NOT shifted — it's anchored to the
      eyebrow lines finishing (unaffected by any of this), not to the
      splash/title timeline, and stays comfortably later than both either
-     way. */
+     way.
+
+     intro-splash-slide is NOT in this unconditional list — see
+     .intro-splash.is-ready-to-slide below. Everything else here (the
+     01-04 asterisk flip-through, landing on 00, the cream->red
+     crossfade) is a pure fixed-delay animation and always plays on
+     schedule regardless of how the page is actually loading — it's
+     only the SLIDE-AWAY that's held back until initIntroSplashHold() in
+     main.js confirms the page is genuinely ready, so a slow connection
+     lingers on the "00" logo screen instead of clearing to reveal a
+     still-blank page underneath (see that function's own comment). */
   animation:
-    intro-splash-slide 1s cubic-bezier(0.33, 1, 0.68, 1) 2480ms forwards,
     intro-splash-bg-cream 0.15s ease 0ms forwards,
     intro-splash-bg-red 0.15s ease 1980ms forwards;
+}
+/* Added by initIntroSplashHold() once BOTH the minimum visual time
+   (2480ms — matching the original fixed slide delay this replaces) AND
+   real readiness (fonts loaded, DOM parsed) are satisfied, whichever is
+   later — see that function for the exact race/timeout. Re-declares
+   bg-cream/bg-red at 0ms alongside the slide (not just the slide alone)
+   because `animation` is a single shorthand property: this higher-
+   specificity rule (2 classes vs. the base rule's 1) replaces the WHOLE
+   value, not just adds to it — omitting them here would silently drop
+   the already-completed red crossfade, snapping the background back to
+   the base rule's plain `background: var(--color-cream)` for a visible
+   red-to-cream flash at the exact moment the slide starts. Redeclaring
+   them at 0ms just re-confirms the same already-reached end values with
+   no visible change, while guaranteeing the shorthand doesn't drop
+   them. */
+.intro-splash.is-ready-to-slide {
+  animation:
+    intro-splash-slide 1s cubic-bezier(0.33, 1, 0.68, 1) 0ms forwards,
+    intro-splash-bg-cream 0.15s ease 0ms forwards,
+    intro-splash-bg-red 0.15s ease 0ms forwards;
 }
 @keyframes intro-splash-bg-cream { to { background-color: var(--color-cream); } }
 @keyframes intro-splash-bg-red   { to { background-color: var(--color-red); } }
 /* Smaller than the hero asterisk (0.65x) — this one's just a splash
-   decoration, not meant to read at full hero size. Jitters in a tiny,
-   fast "buzzing" wiggle continuously — including through the final/00
-   asterisk's own linger, not just the 01-04 switching phase like
-   before. infinite (not a fixed iteration count) so it keeps going
-   regardless of exactly how long the linger before the slide-up ends up
-   being, rather than needing to be recalculated every time that
-   duration changes. Every keyframe stop is a small (max ~0.6px — toned
-   down from an earlier ~1.5px, which read as too intense/violent) offset
-   except 0%/100%, which are neutral, so each loop restarts cleanly at
-   translate(0,0) with no visible jump. */
+   decoration, not meant to read at full hero size. Buzzes continuously
+   through ALL FOUR numbered asterisks (1/2/3/4 — this is one shared
+   wrapper, so whichever child asterisk is currently cut in rides the
+   same wiggle), then DECAYS to a smooth, still stop in the brief 70ms
+   gap between asterisk--4 hiding (1910ms) and the final/00 asterisk
+   landing (1980ms — see .intro-splash__asterisk--final's own cut
+   delay), so there's a genuine settled beat before .intro-splash itself
+   slides away (2480ms). Buzz must stay at full amplitude all the way to
+   ~96% (not decay gradually from 70% as an earlier pass did) — with a
+   270-1980ms window and the four numbered screens' visible windows
+   scattered across the FULL span (asterisk--4's is 1560-1910ms, deep
+   into what used to be the decay tail), a gradual decay starting too
+   early left the later asterisks looking like they'd already gone
+   still. Confining the decay to the invisible 1910-1980ms gap means
+   every numbered asterisk gets the same lively wiggle, and the decay
+   itself is never actually seen (nothing is on-screen during that gap)
+   — only its result, a fully-settled final asterisk. One single,
+   self-contained, non-infinite animation spanning that whole 1980ms
+   window (not "infinite jitter forever, then separately triggered
+   settle") deliberately avoids layering two named animations on the
+   same element/property: a same-class-of-bug investigation elsewhere in
+   this file (see the reset-timing work on the hero asterisk) found that
+   when two animations both end up simultaneously active/forwards-filled
+   on the same property, which one wins is NOT reliably "whichever is
+   listed last" — a real browser quirk, not just a theoretical risk. A
+   single keyframe list sidesteps that ambiguity entirely. Every offset
+   stays small (max ~0.6px — an earlier ~1.5px read as too intense). */
 .intro-splash__asterisk-wrap {
   position: relative;
   width: calc(var(--hero-asterisk-size) * 0.65);
   aspect-ratio: 184 / 200;
-  animation: intro-splash-asterisk-jitter 120ms linear infinite;
+  animation: intro-splash-asterisk-jitter-settle 1980ms linear forwards;
 }
-@keyframes intro-splash-asterisk-jitter {
+@keyframes intro-splash-asterisk-jitter-settle {
   0%   { transform: translate(0, 0); }
-  15%  { transform: translate(-0.6px, 0.4px); }
-  30%  { transform: translate(0.4px, -0.6px); }
-  45%  { transform: translate(-0.4px, -0.4px); }
+  5%   { transform: translate(-0.6px, 0.4px); }
+  10%  { transform: translate(0.4px, -0.6px); }
+  15%  { transform: translate(-0.4px, -0.4px); }
+  20%  { transform: translate(0.6px, 0.3px); }
+  25%  { transform: translate(-0.5px, 0.5px); }
+  30%  { transform: translate(0.3px, -0.5px); }
+  35%  { transform: translate(-0.6px, 0.2px); }
+  40%  { transform: translate(0.5px, -0.3px); }
+  45%  { transform: translate(-0.3px, 0.6px); }
+  50%  { transform: translate(0.4px, -0.4px); }
+  55%  { transform: translate(-0.5px, -0.3px); }
   60%  { transform: translate(0.6px, 0.4px); }
-  75%  { transform: translate(-0.4px, 0.6px); }
-  90%  { transform: translate(0.4px, -0.4px); }
-  100% { transform: translate(0, 0); }
+  65%  { transform: translate(-0.4px, 0.5px); }
+  70%  { transform: translate(0.3px, -0.6px); }
+  /* Same buzz cycle repeated (not decayed) — keeps asterisk--3's and
+     asterisk--4's own visible windows (1140-1490ms and 1560-1910ms) just
+     as lively as asterisk--1's. */
+  75%  { transform: translate(-0.6px, 0.4px); }
+  80%  { transform: translate(0.4px, -0.6px); }
+  85%  { transform: translate(-0.4px, -0.4px); }
+  90%  { transform: translate(0.6px, 0.3px); }
+  95%  { transform: translate(-0.5px, 0.5px); }
+  /* Decay tail, compressed into the invisible 1910-1980ms gap after
+     asterisk--4 has already hidden — never actually seen mid-motion,
+     only its settled result once the final asterisk cuts in. */
+  97%   { transform: translate(0.15px, -0.15px); }
+  98.5% { transform: translate(-0.05px, 0.05px); }
+  100%  { transform: translate(0, 0); }
 }
 /* All 5 stacked in the same spot. Each one's own hide fires 70ms
    BEFORE the next one's appear (not simultaneously) — that gap is
@@ -368,7 +441,21 @@ ul { list-style: none; margin: 0; padding: 0; }
    through its own slide (same "don't wait for the sub-pixel tail"
    convention used throughout the intro). Reuses intro-splash-slide
    (translateY only, no fade) since these are also just quick slides,
-   not fades. */
+   not fades.
+
+   Known, accepted gap: these delays are still fixed/absolute (2980ms,
+   3180ms below), NOT tied to .intro-splash's own now-conditional slide
+   (see .intro-splash.is-ready-to-slide and initIntroSplashHold() in
+   main.js). On a connection slow enough that the splash actually gets
+   held past ~3180ms, these layers will have already finished their own
+   slide (invisible, stacked behind the still-present splash) by the
+   time it finally clears — the rapidfire brown/grey flash gets skipped
+   entirely and the real page just appears directly. That's a lost
+   decorative flourish, not a broken/blank-page bug, and only on
+   connections slow enough to trigger the hold in the first place —
+   left as-is rather than converting this cascade to also be
+   JS-triggered, which felt like more machinery than a cosmetic-only gap
+   justified. */
 .intro-splash-layer {
   position: fixed;
   inset: 0;
@@ -413,6 +500,21 @@ ul { list-style: none; margin: 0; padding: 0; }
   height: var(--nav-height);
   padding: 0 32px;
   background: var(--color-cream);
+  /* Clips .nav__dropdown (see below) to nothing while collapsed at the
+     base --nav-height — the dropdown reveal is driven ENTIRELY by this
+     element's own height growing to expose it, not a separate
+     opacity/visibility toggle on the dropdown itself. Animating
+     `height` directly (not transform/opacity) does mean this triggers
+     real layout on every frame, but for a small, infrequent,
+     hover-triggered bar like this the cost is negligible — reached for
+     the simplest correct thing rather than a measured-pixel-height JS
+     alternative for this first pass. cubic-bezier(0.33,1,0.68,1) is the
+     same "quick start, slow finish" easeOutCubic curve used for every
+     other slide on this page (see the intro splash's own use of it) —
+     reused here for the same "smooth, seamless" feel on request. */
+  overflow: hidden;
+  /* height transition lives on body.intro-finished .site-header instead
+     of here — see that rule for why. */
   /* NOT rounding this element's own corners — that was tried and is a
      dead end. The nav bar occupies y:[0, nav-height] exclusively, a
      space scrolled content never renders into, so its own rounded
@@ -425,6 +527,48 @@ ul { list-style: none; margin: 0; padding: 0; }
      fixed bar over a matching-color body, no other complexity
      involved). The illusion has to come from .viewport-frame instead,
      since IT overlaps the actual scrolled content. */
+}
+/* Grows the WHOLE bar's height to reveal .nav__dropdown underneath,
+   rather than the dropdown popping open as its own floating panel on
+   top of the page — explicitly requested. .nav__dropdown is nested
+   INSIDE .nav__item--publications now (see the HTML comment above
+   <header>), so a single :has() on the trigger <li> is enough — hovering
+   the dropdown is hovering a descendant of the <li>, which keeps
+   :hover(li) true the whole time, no second clause needed. */
+.site-header:has(.nav__item--publications:hover) {
+  height: var(--nav-height-expanded);
+}
+/* The height transition itself lives here, scoped to body.intro-finished,
+   rather than on the base .site-header rule above — .site-header also
+   carries .intro-reveal--drop (its one-time page-load fade+drop-in), which
+   declares its OWN competing `transition` shorthand at equal specificity;
+   whichever rule is declared later in the file would silently win and
+   fully discard the other's transition (shorthand properties replace,
+   they don't merge). body.intro-finished bumps this rule's specificity
+   from (0,1,0) to (0,2,0), so it reliably wins regardless of file order —
+   and since body.intro-finished is only added once the intro sequence has
+   genuinely finished (see main.js), the intro's own drop-in animation is
+   completely unaffected. */
+body.intro-finished .site-header {
+  transition: height 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+}
+/* Grace period before the bar actually starts SHRINKING back down.
+   Verified via Playwright (a decelerating, realistic mouse path into the
+   trigger) that a real, brief Chromium hover flicker can occur mid-
+   approach even while the cursor is squarely inside a stable element's
+   box — for an instant :hover(.nav__item--publications) stops matching,
+   then re-matches a frame or two later. With no delay, that instant is
+   enough to kick off a real (if tiny) reverse height transition before
+   the forward one resumes, which reads as "tries to open, fails, then
+   opens" — exactly what was reported. Delaying only the CLOSE direction
+   means a flicker that resolves within 160ms never starts a visible
+   shrink at all (the target height flips back to expanded before the
+   delayed transition fires); a genuine, sustained mouse-away still closes
+   the bar, just 160ms later than before — imperceptible for a hover
+   interaction like this. Grow itself keeps 0 delay (unaffected, since
+   this selector only matches the NOT-hovered state). */
+body.intro-finished .site-header:not(:has(.nav__item--publications:hover)) {
+  transition-delay: 160ms;
 }
 
 .nav__logo {
@@ -512,7 +656,95 @@ ul { list-style: none; margin: 0; padding: 0; }
      alone can get you. */
   transform: scaleY(0.75);
   background: var(--color-dark);
+  transition: background-color 0.15s ease;
   pointer-events: none;
+}
+/* Same red-on-hover convention as .nav__links a itself (color 0.15s
+   ease, right above) — the underline only ever sits under the ACTIVE
+   link (see initNavHighlight() in main.js), so :has() on that link's
+   own <li> is what lets this plain sibling <li> (.nav__indicator-slot,
+   later in the same <ul>) react to it, without needing JS to toggle a
+   class just for this. */
+.nav__links li:has(> a.is-active:hover) ~ .nav__indicator-slot .nav__indicator {
+  background: var(--color-red);
+}
+
+/* .nav__item--publications is .nav__dropdown's own containing block (see
+   the HTML comment above <header>) — position:relative here is what lets
+   the dropdown's top:100%/left:0 resolve against the <li> itself rather
+   than needing to bypass .nav's own transform:translateY(-50%). */
+.nav__item--publications {
+  position: relative;
+}
+
+/* Publications dropdown — a left-aligned vertical list revealed by
+   .site-header growing taller (see that rule's own :has()), not a
+   separate floating panel. top:100%/left:0 sit flush against the trigger
+   <li>'s own box (nested inside it — see the HTML comment above
+   <header>), so there's no gap between "Publications*" and the list
+   below it: hovering anywhere in the list is hovering a descendant of
+   the <li>, which is what keeps .site-header:has(.nav__item--
+   publications:hover) matching continuously as the cursor moves from
+   one into the other, no separate bridge element needed. */
+.nav__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 32px 0 24px;
+  pointer-events: auto;
+}
+.nav__dropdown a {
+  color: var(--color-dark);
+  /* Matches the main nav items' own size/weight/tracking exactly, per
+     request — no longer a visibly "smaller/secondary" tier. */
+  font-size: var(--text-small);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+/* Echoes "Publications*" own trailing asterisk — each item IS a piece of
+   that "more information" the trigger's own asterisk points to. */
+.nav__dropdown-asterisk {
+  margin-right: 6px;
+}
+.nav__dropdown a:hover {
+  color: var(--color-red);
+}
+
+/* Dims the page behind the header while the dropdown is open — same
+   :has() condition as .site-header's own height rule (repeated, not
+   shared, since this is a separate sibling element reacting to the
+   same trigger — see the HTML comment above .nav-dim-overlay). Sits
+   below the header's own z-index:100 but above ordinary page content. */
+.nav-dim-overlay {
+  position: fixed;
+  inset: 0;
+  /* 95, not 90 — .viewport-frame (further down) also sits at z-index:90
+     for its own rounded-corner illusion; tying with it would leave
+     stacking order down to DOM position (this element happens to come
+     first, which would put it BEHIND that frame) rather than a clear,
+     intentional order. 95 keeps this unambiguously above that frame and
+     ordinary content, still below the header itself (100). */
+  z-index: 95;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.site-header:has(.nav__item--publications:hover) ~ .nav-dim-overlay {
+  opacity: 1;
+}
+/* Same close-debounce as .site-header's own height (see that rule) — keeps
+   the dim fade in sync with the bar so they can't visibly desync during a
+   flicker-guarded close. */
+.site-header:not(:has(.nav__item--publications:hover)) ~ .nav-dim-overlay {
+  transition-delay: 160ms;
 }
 
 /* Fixed viewport frame — starts essentially at the nav bar's bottom edge
@@ -708,7 +940,21 @@ main {
    right edge into the empty margin. The wrap holds position + the
    one-shot intro pop-in (opacity/scale/decelerating extra spin); the
    inner img holds only its own continuous constant-speed spin — see
-   the HTML comment for why these are split across two elements. */
+   the HTML comment for why these are split across two elements.
+
+   top/right below are a no-JS fallback only — .hero__wordmark-wrap's
+   width (clamp(220px, 22vw, 380px)) and the word's own font-size
+   (clamp(104px, 14.85vw, 192px)) are two INDEPENDENT clamp()s with
+   different breakpoints (1000/1727px viewport width vs 700/1293px), so
+   they only stay proportional to each other in the narrow band where
+   both happen to be unclamped at once. Outside that band one of them
+   is pinned while the other keeps scaling, so a position expressed as
+   %-of-the-wrap drifts relative to the actual "d" glyph — confirmed by
+   measurement, drifting from about -20px to +28px off the "d"'s own
+   right edge across the viewport range. positionHeroAsterisk() in
+   main.js measures the real .hero__wordmark-d-anchor glyph and
+   overrides top/left with pixel values instead, so this never drifts;
+   it only shows if JS hasn't run yet. */
 .hero__wordmark-asterisk-wrap {
   position: absolute;
   top: 50%;
@@ -819,7 +1065,14 @@ main {
    positionally with the property list above: opacity keeps the real
    --reveal-delay stagger, filter stays immediate (0s) as before. */
 .square:hover {
-  filter: brightness(1.04);
+  /* 1.04 (an earlier, subtler value) made the effect feel laggy compared
+     to .image-mosaic__hover-tile's hover (a much bigger +14% white
+     overlay, same 600ms curve) — not an actual timing bug (verified: both
+     genuinely start animating on the very first frame), just that a
+     smaller target magnitude takes longer, in real time, to cross the
+     threshold where the eye can actually register a change. Bumped up so
+     it registers sooner without the curve/duration needing to change. */
+  filter: brightness(1.07);
   transition: opacity 0.7s ease-out, filter 0.6s cubic-bezier(0.25, 1, 0.5, 1);
   transition-delay: var(--reveal-delay, 0ms), 0s;
 }
@@ -864,11 +1117,16 @@ main {
 .square--content-left .diamond-cta {
   align-self: center;
 }
-/* Section 4 square 2 wants the SAME 70px padding as .square--content-left
-   above (matching section 2 squares 6/7) but its text stays centered,
-   not left/top-anchored — a separate modifier rather than reusing
-   .square--content-left wholesale, since that one also brings
-   align-items/justify-content/text-align this square doesn't want. */
+/* Standardized padding for every tile with real body text, using
+   section 2 squares 6/7 (.square--content-left, 70px) as the reference
+   value — a separate modifier rather than reusing .square--content-left
+   wholesale, since that one also brings align-items/justify-content/
+   text-align that not every one of these tiles wants (section 4 square
+   2's headline stays centered; the role-reveal tiles below keep their
+   own centered heading + left-aligned hover description). Tiles that
+   are decorative-only, button/CTA-only, or use specially centered
+   short text (not body-text paragraphs) intentionally stay at the
+   base .square 40px instead. */
 .square--pad-lg {
   padding: 70px;
 }
@@ -1040,7 +1298,13 @@ main {
 .square__role-description {
   position: absolute;
   inset: 0;
-  padding: 40px;
+  /* Matches its own tile's padding (.square--pad-lg, 70px — see the
+     role-reveal squares' own class list in index.html) rather than the
+     base .square 40px: this overlay is absolutely positioned over the
+     SAME tile, so a mismatched inset here would make the revealed
+     description text jump to a different left/top edge than the
+     heading it's replacing. */
+  padding: 70px;
   display: flex;
   align-items: center;
   text-align: left;
@@ -1327,6 +1591,13 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Every instance sits inside a flex column (.square--content-left)
+     whose height shrinks with the viewport — without this, flexbox's
+     default flex-shrink:1 compresses just this box's height (the main
+     axis) once the column runs out of room, while width (cross axis)
+     stays untouched, rotating a squashed non-square box into a flat
+     rectangle instead of a diamond. */
+  flex-shrink: 0;
   /* Without this, hovering the arrow/text (plain inline content, not a
      real link) shows the browser's default text-selection I-beam
      cursor — decorative hover only, not a click affordance (same
@@ -1365,7 +1636,17 @@ a.diamond-cta {
   width: 22px;
   height: 14px;
   vertical-align: middle;
-  cursor: default;
+  /* No cursor override here (was cursor:default) — every current
+     instance of this glyph lives inside a real clickable ancestor (a
+     .diamond-cta <a>/<button>, or a plain <a> for the publications
+     view-more/mosaic headline links), all of which already resolve to
+     cursor:pointer. cursor is an inherited property, so leaving it
+     unset here lets the glyph correctly pick up pointer from whatever
+     it's actually inside, instead of a stray explicit default blocking
+     that inheritance and showing a text-cursor over just the arrow's
+     own pixels while the rest of the same clickable element shows
+     pointer. Per explicit request: every arrow instance should show
+     pointer on hover. */
 }
 .arrow-glyph img {
   position: absolute;
@@ -1526,6 +1807,19 @@ a.diamond-cta {
      own width (see .social-carousel__track) — together that's exactly
      100% of .social-carousel per slide. */
   flex: 0 0 25%;
+}
+/* Same pattern as .image-mosaic__photo — sits in the exact same DOM/
+   stacking position .social-carousel__photo-placeholder occupied (first
+   child of the slide), so slides that now have a real photo still work
+   with the existing mask-reveal/scrim/hover-tile layers on top of it
+   unchanged; only slides without a real photo yet still use the
+   placeholder. */
+.social-carousel__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .social-carousel__photo-placeholder {
   position: absolute;
@@ -1728,10 +2022,23 @@ a.diamond-cta {
    Split CTA
 =================================================================== */
 .split-cta {
-  /* Was a clean 2/1 (matching 2 square-grid rows, i.e. "2 squares tall")
-     — trimmed a bit shorter per explicit follow-up feedback. */
-  aspect-ratio: 2.15 / 1;
+  /* Was sized off an aspect-ratio (2/1 -> 2.15/1 -> 2.3/1, matching "N
+     square-grid rows") — replaced entirely per explicit request to fill
+     the viewport height instead. min-height (not height) so genuinely
+     tall content still pushes the section taller rather than clipping,
+     though at this content size it's effectively a flat 100vh.
+     align-content:center is what actually centers the single grid row
+     vertically within that extra height — align-items (below) only
+     positions items WITHIN their row's own height, which does nothing
+     once the row is shorter than the container itself. Doesn't touch
+     .split-cta__illustration-wrap's own size (driven by the COLUMN
+     WIDTH via its own aspect-ratio, not the section's height) or
+     .split-cta__illustration's -90px offset from it, so the illust
+     stays in exactly the same spot relative to the bg box regardless of
+     how tall the section itself is. */
+  min-height: 100vh;
   display: grid;
+  align-content: center;
   /* Was 2fr 1fr (deco at only 1/3 width) — the illustration is meant to
      take up "a little more than half" of the section (per the mockup),
      matching its own explicit "2 squares wide" spec against a 4-square-
@@ -1747,15 +2054,37 @@ a.diamond-cta {
 }
 /* Bumped from 60px per explicit request to push the text further right. */
 .split-cta__text { padding-left: 120px; }
-.split-cta__text p {
-  /* Explicit body-text preset — matches the mockup closely (plain
-     Freight, not an accidentally-inherited display treatment). Same
-     values body{} already sets, just spelled out here since this
-     paragraph is the thing being matched against. */
+/* The 3 paragraph lines are hardcoded <span>s (see index.html), not one
+   wrapped <p> — needed so each can reveal independently (see
+   .split-cta__text-line below). display:block scoped to the span tag
+   specifically so it doesn't fight .split-cta__cta's own display:flex —
+   that div shares the .split-cta__text-line class too (for the shared
+   reveal treatment) but must stay a flex row, not become block. */
+span.split-cta__text-line {
   font-family: var(--font-body);
   font-size: var(--text-body);
-  margin-bottom: 12px;
+  display: block;
 }
+/* Reveal chain, step 3 (see initSplitCtaReveal() in main.js): fires once
+   the illustration (step 2) finishes its own transition. Same slide-up +
+   fade idiom as .intro-reveal--slide, and the same nth-child incremental
+   -delay trick as .hero__eyebrow-line — is what makes 4 elements toggled
+   by the SAME JS call still read as "line by line" instead of one block
+   moving at once. All 4 (3 text spans + the CTA row) are direct children
+   of .split-cta__text so nth-child counts correctly across both tags. */
+.split-cta__text-line {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+  transition-delay: 0s;
+}
+.split-cta__text-line.is-visible {
+  opacity: 1;
+  transform: none;
+}
+.split-cta__text-line.is-visible:nth-child(2) { transition-delay: 90ms; }
+.split-cta__text-line.is-visible:nth-child(3) { transition-delay: 180ms; }
+.split-cta__text-line.is-visible:nth-child(4) { transition-delay: 270ms; }
 .split-cta__cta {
   display: flex;
   align-items: center;
@@ -1828,13 +2157,15 @@ a.diamond-cta {
   align-items: center;
 }
 /* Section 3's illustration — a real photo/artwork, not a CSS shape like
-   .deco-flower used to be (removed). --color-illustration-bg is a
-   one-off, explicitly requested color, NOT part of the 5-color swatch
-   (same treatment as --color-tan-dark elsewhere in this file). Sized to
-   the "2 squares wide, 1.5 squares tall" spec via aspect-ratio (4/3 —
-   2 / 1.5 reduces to the same ratio) rather than a hardcoded pixel size,
-   since "square" here is just a relative unit for the proportions, not
-   a literal reference to any actual square tile elsewhere on the page. */
+   .deco-flower used to be (removed). Sized to the "2 squares wide, 1.5
+   squares tall" spec via aspect-ratio (4/3 — 2 / 1.5 reduces to the same
+   ratio) rather than a hardcoded pixel size, since "square" here is just
+   a relative unit for the proportions, not a literal reference to any
+   actual square tile elsewhere on the page. Just a positioning context
+   now — the visible near-black rectangle lives in the child
+   .split-cta__illustration-tiles layer below (see its own comment), not
+   here directly, so this element's own overflow can stay visible for the
+   artwork's deliberate bottom bleed. */
 .split-cta__illustration-wrap {
   position: relative;
   /* Was 100% — filled its grid column edge-to-edge, so .split-cta__deco's
@@ -1844,38 +2175,121 @@ a.diamond-cta {
      floats centered in its column instead of touching either edge. */
   width: 90%;
   aspect-ratio: 4 / 3;
-  background: var(--color-illustration-bg);
-  border-radius: 24px;
   /* NOT overflow:hidden — .split-cta__illustration is deliberately
      taller than this box and bleeds out past its bottom edge onto the
      page (the image's own built-in fade-to-cream at its bottom is what
      makes that bleed read as intentional rather than a clipping bug).
-     History on this value: -40px -> -65px -> -110px -> -78px -> -95px ->
-     0 (dead center, per explicit request) -> -140px (way too far — bled
-     into the ENTIRE preceding section's content, not just the header
-     strip) -> -70px -> -100px (too high again, nudged back down) -> -55px. */
-  transform: translateY(-55px);
+     No transform here — this wrap positions the BG TILES (its own
+     background), so it stays at .split-cta's own align-items:center
+     (dead center), per explicit request. Every subsequent "move the
+     illust up" round belongs on .split-cta__illustration alone (see
+     below) — the artwork and its bg box are separate entities; a
+     transform here moves both together, which is exactly the bug this
+     replaced (a long history of translateY values — -40 through a
+     diagnostic -400px — all lived on this rule before that was caught). */
+}
+/* The actual visible rectangle: 2 tiles across, 1.5 tiles down (a
+   full-height row of 2 + a half-height row of 2 — tiles are square, so a
+   half-height bottom row is what makes 2 rows add up to "1.5 tiles"
+   tall). --color-illustration-bg is a one-off, explicitly requested
+   color, NOT part of the 5-color swatch (same treatment as
+   --color-tan-dark elsewhere in this file). overflow:hidden here (not on
+   the parent wrap) clips the 4 tiles to the rounded corners without
+   touching the artwork image, which is a SIBLING of this element, not a
+   child of it. Each .split-cta__illustration-tile is opted into the
+   site's shared reveal-on-scroll system (see that block further down +
+   initRevealOnScroll()'s targets in main.js) purely by being added to
+   those same selector lists — same tile-by-tile stagger machinery
+   section 1's square-grid already uses, no bespoke animation code. */
+.split-cta__illustration-tiles {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr 0.5fr;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.split-cta__illustration-tile {
+  background: var(--color-illustration-bg);
+  filter: brightness(1);
+}
+/* Same hover-glow MECHANISM as .square:hover (plain per-tile :hover, not
+   triggered off an ancestor — decorative only, no cursor change), but
+   NOT the same brightness value. .square's tiles are light colors
+   (tan/cream/red) where a 4% bump is plainly visible; this tile is
+   near-black (--color-illustration-bg, ~rgb(14,19,22)) — the SAME 4%
+   only shifts each channel by about 1 out of 255, invisible regardless
+   of what's covering it. 2.5 fixed that but read as "bizarre" (too
+   washed out) — dialed back to a more moderate lift.
+
+   Scoped to .is-visible:hover, not a bare :hover, and that's load-
+   bearing, not stylistic: the shared reveal rule's
+   ".split-cta__illustration-tile.is-visible { transition-delay: var(
+   --reveal-delay, 0ms); }" (a SINGLE value, further down in this file)
+   has the exact same specificity as a bare ":hover" rule (0,2,0 either
+   way), so being LATER in the file let it win the whole property
+   outright — meaning every tile's hover picked up its own REVEAL
+   stagger delay (0/200/400/600ms) for its filter transition too, not
+   just its opacity, which is exactly why the bottom two tiles (the
+   larger delays) visibly lagged before brightening. Adding .is-visible
+   to THIS selector (0,3,0) guarantees it wins regardless of source
+   order, so the re-listed "filter ..., 0s" pair actually applies. */
+.split-cta__illustration-tile.is-visible:hover {
+  filter: brightness(1.7);
+  transition: opacity 0.7s ease-out, filter 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  transition-delay: var(--reveal-delay, 0ms), 0s;
 }
 /* Section 3 Artwork.png is portrait or (2428x3132, roughly 3:4) —
    noticeably taller than this box's own 4:3 ratio, so sizing it to a
    width narrower than the box (not 100%) and letting height:auto follow
    its natural ratio is what produces the "inset on the sides, bleeds
    out the bottom" look in the mockup, rather than the image exactly
-   filling the box on every edge. */
+   filling the box on every edge. Reveal chain, step 2 (see
+   initSplitCtaReveal() in main.js): starts hidden, and is toggled
+   .is-visible once ALL 4 tiles above (step 1) finish their own opacity
+   transition — not on its own scroll trigger.
+
+   The -90px lift lives HERE (not on .split-cta__illustration-wrap) —
+   the artwork and its bg box are separate entities: this element alone
+   is "the illust," and every "move it up" request should only ever
+   touch this rule. It's folded into the SAME transform as
+   translateX(-50%) (both here and in .is-visible below) rather than a
+   separate declaration, since a 2nd `transform` rule would replace the
+   first outright instead of composing with it — same class of bug hit
+   repeatedly elsewhere in this file. The hidden state adds the reveal
+   slide's +20px on top (-90 + 20 = -70px) so the slide-up-on-reveal
+   motion still arrives at the same -90px resting position. */
 .split-cta__illustration {
   position: absolute;
   top: 5%;
   left: 50%;
-  transform: translateX(-50%);
   /* Bumped repeatedly per follow-up feedback that it read as unchanged,
-     then dialed back down after "massive": 72% -> 90% -> 80% -> 70%. */
-  width: 70%;
+     then dialed back down after "massive": 72% -> 90% -> 80% -> 70% ->
+     78% (a little larger per explicit follow-up). */
+  width: 78%;
   height: auto;
+  /* The artwork's own (mostly-transparent) bounding box sits ON TOP of
+     the tiles underneath and, being taller than it is wide, covers
+     nearly the entire box — without this, the cursor almost always
+     lands on the artwork's img element first, so .split-cta__
+     illustration-tile:hover practically never triggers except right at
+     a bare corner. This is purely decorative (no click behavior of its
+     own), so letting hover/click pass straight through to whatever's
+     underneath is correct, not a regression. */
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-70px);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+}
+.split-cta__illustration.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-90px);
 }
 .split-cta__illustration-asterisk {
-  /* Hidden for now per explicit request — not removed from the HTML,
-     so they're easy to bring back later. */
-  display: none;
+  /* Brought back per explicit follow-up request — was display:none for
+     a while, kept in the HTML rather than removed specifically so this
+     was a one-line revert. */
   position: absolute;
   height: auto;
   animation: hero-asterisk-spin 8s linear infinite;
@@ -2162,13 +2576,23 @@ a.diamond-cta {
    animate the jump from "however it first rendered" down to opacity:0,
    i.e. a visible fade-OUT flash on every load, before ever fading back
    in on scroll. Baking it into the selector avoids that entirely.
+
+   .split-cta itself (the whole section) is deliberately NOT in this
+   list, unlike before — it has no visible fill of its own, and now that
+   its insides reveal via their own explicit chain (tiles -> illustration
+   -> text lines, see initSplitCtaReveal() in main.js), also fading the
+   section wrapper as a scroll-triggered unit would compound against that
+   chain (its --reveal-delay comes from its index among ALL of <main>'s
+   section-level children, an unrelated number that could easily outpace
+   or lag the internal choreography) for no visual benefit, since the
+   section has nothing to show on its own besides its children.
 =================================================================== */
 .square,
+.split-cta__illustration-tile,
 .image-mosaic__mask,
 .social-carousel__mask,
 .quote-block,
-.publication-card,
-.split-cta {
+.publication-card {
   opacity: 0;
   transition: opacity 0.7s ease-out;
   /* Always instant when LEAVING .is-visible (whichever direction that
@@ -2182,11 +2606,11 @@ a.diamond-cta {
   transition-delay: 0s;
 }
 .square.is-visible,
+.split-cta__illustration-tile.is-visible,
 .image-mosaic__mask.is-visible,
 .social-carousel__mask.is-visible,
 .quote-block.is-visible,
-.publication-card.is-visible,
-.split-cta.is-visible {
+.publication-card.is-visible {
   transition-delay: var(--reveal-delay, 0ms);
 }
 .is-visible {
@@ -2303,6 +2727,16 @@ body.intro-finished .hero__eyebrow-line.is-visible:nth-child(2) {
   transition-delay: 90ms;
 }
 body.intro-finished .hero__eyebrow-line:not(.is-visible) {
+  /* transition-duration:0 (not the whole shorthand — property list and
+     timing-function stay put) blips this straight to hidden instead of
+     smoothly fading out. Without this, scrolling down then back up
+     again quickly enough could catch the exit fade still mid-flight,
+     so the following re-entrance would start from whatever partial
+     opacity was left over instead of a clean 0 — visually "only half
+     the reset animation plays." Exiting doesn't need to look graceful;
+     it just needs to reliably finish being gone before any re-entrance
+     can start from a known-clean state. */
+  transition-duration: 0s;
   opacity: 0;
   transform: translateY(-100px);
 }
@@ -2328,13 +2762,23 @@ body.intro-finished .hero__title-exit {
    never catch one of these mid-delay, still not actually having started
    its exit, and re-enter from a stale partial value instead of a clean
    0. */
+/* Stagger amounts match the ORIGINAL page-load intro's own relative
+   cadence (word 1 -> "for" +130ms -> word 2 +350ms — see the <header>
+   intro sequence comment in index.html), not an arbitrary re-entry-only
+   value, per explicit request that scrolling back should just replay
+   what the intro itself does. */
 body.intro-finished .hero__wordmark-for.is-visible {
-  transition-delay: 0.1s;
+  transition-delay: 0.13s;
 }
 body.intro-finished .hero__wordmark-word--2 .hero__title-exit.is-visible {
-  transition-delay: 0.2s;
+  transition-delay: 0.35s;
 }
 body.intro-finished .hero__title-exit:not(.is-visible) {
+  /* Same instant-blip reasoning as .hero__eyebrow-line:not(.is-visible)
+     above — exiting must reliably finish before any fast down-then-up
+     scroll can catch it mid-fade and start the next re-entrance from a
+     stale partial value. */
+  transition-duration: 0s;
   opacity: 0;
   transform: translateY(-100px);
 }
@@ -2343,70 +2787,68 @@ body.intro-finished .hero__title-exit.is-visible {
   transform: none;
 }
 /* The hero asterisk (beside the second "Word"'s "d") joins the same
-   scroll-linked exit as the title/eyebrows, on the SAME beat as the
-   2nd "Word" (0.2s — see the title stagger above) since it sits right
-   next to it. Its one-shot pop-in `animation` (hero-asterisk-intro, see
-   .hero__wordmark-asterisk-wrap) is switched off here first — an
-   `animation` that touches transform/opacity keeps "owning" those
-   properties even once finished and sitting in its forwards-filled
-   resting state, which would otherwise silently block a `transition`
-   from ever visibly running on them. Once the animation is off, a
-   plain transition (matching the title/eyebrows' own easeOutCubic
-   slide) takes over for the scroll-triggered fade+slide. The inner
-   img's own continuous spin (.hero__wordmark-asterisk) is a separate
-   element and keeps spinning throughout, untouched. */
+   scroll-linked exit as the title/eyebrows. REDESIGNED per explicit
+   request: re-entry should just REPLAY the exact page-load intro pop
+   (hero-asterisk-intro), synced to word 2's own beat, not fade in early
+   via a plain transition with a "bonus" spin tacked on afterward — the
+   previous approach (0.2s fade start + a spin at 1.5s) read as "the
+   asterisk is already visible" well before the spin ever kicked in,
+   since the plain transition had a full 1.3s head start on it.
+   Exiting is unchanged (smooth 1.6s fade+slide, matching the
+   title/eyebrows' own exit) — only the ENTERING side changes below. */
 body.intro-finished .hero__wordmark-asterisk-wrap {
   animation: none;
   opacity: 1;
   transform: none;
   transition: opacity 1.6s cubic-bezier(0.33, 1, 0.68, 1),
               transform 1.6s cubic-bezier(0.33, 1, 0.68, 1);
-  /* Always instant when exiting (base rule, unscoped) — the 0.2s beat
-     below only applies when ENTERING (.is-visible), same reasoning as
-     the eyebrow/title staggers above: exiting must never have a delay
-     a fast scroll reversal could catch mid-flight, before it's actually
-     started, leaving a stale partial opacity for the next re-entrance
-     to (wrongly) start from instead of a clean 0. */
   transition-delay: 0s;
 }
 body.intro-finished .hero__wordmark-asterisk-wrap:not(.is-visible) {
+  /* Same instant-blip reasoning as .hero__eyebrow-line/.hero__title-exit
+     above. */
+  transition-duration: 0s;
   opacity: 0;
   transform: translateY(-100px);
 }
+/* transition-delay here MUST match .is-respinning's own animation-delay
+   below exactly (both 0.35s): when both start at the literal same
+   instant, the animation wins outright (an animation always overrides a
+   transition running on the same property), so this plain transition
+   never gets to visibly show a single frame of its own fade — it only
+   exists so non-reduced-motion users still have SOMETHING driving
+   opacity if .is-respinning somehow isn't added, and so reduced-motion
+   users (who never get .is-respinning at all — see initHeroEyebrowExit)
+   have a real reveal mechanism instead of none. If this delay is ever
+   shortened below the matching .is-respinning delay below, the old bug
+   comes back: a visible partial fade before the pop starts. */
 body.intro-finished .hero__wordmark-asterisk-wrap.is-visible {
   opacity: 1;
   transform: none;
-  transition-delay: 0.2s;
+  transition-delay: 1.95s;
 }
 /* Replays the exact pop-in spin the asterisk played on the very first
    page load (hero-asterisk-intro — see .hero__wordmark-asterisk-wrap's
-   base, unscoped rule above the intro-finished overrides) every time
-   scrolling back up brings the hero into view again, instead of just
-   the plain fade+slide the rule above drives on its own. .is-respinning
-   is added by initHeroEyebrowExit() in main.js ONLY on an actual
-   hidden->visible transition (never on every scroll tick it's already
-   visible for), and removed-then-re-added there each time (forcing a
-   reflow in between) so the animation genuinely restarts even on the
-   2nd/3rd/etc. re-entry, not just the first. 1.5s delay — 0.2s (this
-   same element's own fade-in beat above) + 80% of the 2nd word's own
-   1.6s re-entrance transition, the same "~80%, substantially resolved"
-   convention the ORIGINAL page-load intro used for this exact handoff
-   (see the <header> intro sequence comment in index.html) — so the
-   spin reads as a flourish once the title's basically settled back
-   into place, not a competing motion fighting the title's own slide.
-   An `animation` on a property always wins over a `transition` on that
-   same property while it's running, so this briefly interrupts the
-   tail of the plain fade-in transition above — that's intentional: the
-   whole point is trading the last stretch of "just fading in" for the
-   pop instead. Gated entirely in JS behind prefers-reduced-motion (see
-   initHeroEyebrowExit()), same as everywhere else motion is optional
-   on this page — .is-respinning is simply never added for those users,
+   base, unscoped rule above) every time scrolling back up brings the
+   hero into view again. .is-respinning is added by initHeroEyebrowExit()
+   in main.js ONLY on an actual hidden->visible transition (never on
+   every scroll tick it's already visible for), and removed-then-re-
+   added there each time (forcing a reflow in between) so the animation
+   genuinely restarts even on the 2nd/3rd/etc. re-entry, not just the
+   first. Delay is 1.95s — word 2's own 0.35s start delay + its full
+   1.6s transition duration — so the asterisk pops only once word 2 has
+   actually FINISHED animating in, not merely started (tried syncing it
+   to word 2's START instead; explicit follow-up feedback was that this
+   fired too early — the pop needs to wait for word 2 to actually
+   settle). Gated entirely in JS behind prefers-reduced-motion (see
+   initHeroEyebrowExit()), same as everywhere else motion is optional on
+   this page — .is-respinning is simply never added for those users,
    rather than relying on this rule's specificity to lose to the
-   reduced-motion override below (it wouldn't: 3 classes here beats that
-   rule's 1). */
+   reduced-motion override further down (it wouldn't: 3 classes here
+   beats that rule's 1). */
 body.intro-finished .hero__wordmark-asterisk-wrap.is-respinning {
   animation: hero-asterisk-intro 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 1.5s;
+  animation-delay: 1.95s;
 }
 /* Nav bar: fades in while dropping down from just above its resting spot. */
 .intro-reveal--drop {
@@ -2472,13 +2914,210 @@ body.intro-finished .hero__wordmark-asterisk-wrap.is-respinning {
      do without an abrupt phase jump every time the duration changes. */
 }
 
+/* ===================================================================
+   Article pages (generated by scripts/build_articles.py from the
+   markdown files under content/articles/) — a simple, static reading
+   layout: illustration, body copy, credits. No scroll-reveal/intro
+   choreography of its own,
+   matching every other new page on the site (see templates/_header.html).
+=================================================================== */
+.article-page {
+  max-width: 900px;
+  margin: 0 auto;
+  /* Clears the fixed .site-header (70px) with genuine breathing room
+     above the title, rather than the title sitting flush under the bar. */
+  padding: 150px 100px 0;
+}
+.article-page__eyebrow {
+  /* Same size/weight/tracking as .hero__eyebrow — this is the same "short
+     label above a headline" role, just not part of that element's own
+     JS-driven reveal mechanics. */
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-red);
+}
+.article-page__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.1;
+  margin-top: 12px;
+  text-wrap: balance;
+}
+.article-page__byline {
+  margin-top: 16px;
+  font-size: var(--text-small);
+  color: var(--color-dark);
+}
+.article-page__illustration-wrap {
+  margin-top: 48px;
+}
+.article-page__illustration-wrap img {
+  width: 100%;
+  height: auto;
+  /* Same radius as .split-cta__illustration-wrap — the site's one
+     established "photo container" corner treatment. */
+  border-radius: 24px;
+}
+.article-page__illustration-caption {
+  margin-top: 12px;
+  font-size: var(--text-small);
+  color: var(--color-dark);
+  opacity: 0.7;
+}
+.article-page__body {
+  max-width: 720px;
+  margin: 48px auto 0;
+}
+.article-page__body p {
+  margin-top: 24px;
+}
+.article-page__body p:first-child {
+  margin-top: 0;
+}
+.article-page__body a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-page__body a:hover {
+  color: var(--color-red);
+}
+.article-page__body h2,
+.article-page__body h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  margin-top: 40px;
+}
+.article-page__body h2 { font-size: 32px; }
+.article-page__body h3 { font-size: 26px; }
+.article-page__body ul {
+  margin-top: 24px;
+  padding-left: 1.2em;
+  list-style: disc;
+}
+.article-page__body li + li {
+  margin-top: 8px;
+}
+/* Pull-quotes: same display-face treatment as .quote-block (the
+   homepage's own "Empowering voices previously unheard." moment) —
+   reused here rather than invented fresh, so a quote embedded in an
+   article reads consistently with the rest of the site. */
+.article-page__body blockquote {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  margin: 48px auto;
+  max-width: 700px;
+}
+.article-page__body blockquote p {
+  margin-top: 0;
+}
+.article-page__credits {
+  max-width: 720px;
+  margin: 64px auto 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--color-tan);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 48px;
+  font-size: var(--text-small);
+}
+.article-page__credit-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+@media (max-width: 720px) {
+  .article-page { padding: 120px 24px 0; }
+  .article-page__body,
+  .article-page__credits { max-width: none; }
+}
+
+/* ===================================================================
+   Publications listing (generated) — one .marquee-banner (the site's
+   existing section-label convention, see #publications on index.html)
+   per article category, each followed by a grid of teaser cards.
+=================================================================== */
+/* Unlike index.html's own <main> (whose first child, .hero, is
+   min-height:100vh and vertically centers its own content — so the fixed
+   .site-header just overlaps its empty top margin), this page's first
+   child is a plain .marquee-banner sitting flush at the top: without
+   this, it renders directly UNDERNEATH the fixed header instead of below
+   it. Same 150px/120px values as .article-page's own top clearance. */
+.publications-main {
+  padding-top: 150px;
+}
+.publications-category {
+  padding: 0 100px;
+}
+.article-teaser-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin: 32px 0;
+}
+.article-teaser {
+  display: block;
+  text-align: left;
+}
+.article-teaser__cover {
+  aspect-ratio: 4 / 3;
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--color-tan);
+}
+.article-teaser__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.article-teaser__title {
+  margin-top: 16px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+}
+.article-teaser:hover .article-teaser__title {
+  color: var(--color-red);
+}
+.article-teaser__summary {
+  margin-top: 8px;
+  font-size: var(--text-small);
+  opacity: 0.8;
+}
+.article-teaser__meta {
+  margin-top: 8px;
+  font-size: var(--text-small);
+  opacity: 0.6;
+}
+.publications-category__empty {
+  margin: 32px 0;
+  font-size: var(--text-small);
+  opacity: 0.6;
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .publications-main { padding-top: 120px; }
+  .publications-category { padding: 0 24px; }
+  .article-teaser-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .square,
   .image-mosaic__mask,
   .social-carousel__mask,
   .quote-block,
   .publication-card,
-  .split-cta,
+  /* .split-cta itself is no longer part of the opacity-reveal system
+     (see the comment on that shared selector list further up) — its
+     insides (tiles, illustration, text lines) are what actually need
+     covering here now. */
+  .split-cta__illustration-tile,
+  .split-cta__illustration,
+  .split-cta__text-line,
   .partners,
   .intro-reveal,
   .intro-reveal--slide,

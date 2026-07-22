@@ -1,0 +1,48 @@
+name: Build and deploy
+
+# Runs scripts/build_articles.py (turns content/articles/*.md into real
+# article pages + publications.html) and publishes the result to GitHub
+# Pages. This is what makes a Decap CMS submission (which just commits a
+# new .md file) actually show up as a live page — nobody needs to run
+# anything by hand.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # No requirements.txt / pip install step on purpose — the script is
+      # standard-library-only (see its own docstring for why).
+      - name: Build article pages
+        run: python3 scripts/build_articles.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,38 @@
+    <!-- Same header markup as index.html's own <header>, minus the
+         intro-reveal/intro-reveal--drop classes and --intro-delay style —
+         secondary pages (this one included) have no homepage intro splash
+         to choreograph against, so the header just renders visible from
+         the start. See initIntroReveal() in main.js: with no
+         .intro-reveal elements on the page, it sets body.intro-finished
+         immediately instead of waiting on a timer, which is what the
+         Publications dropdown's own height transition is gated on.
+
+         {{BASE}} is substituted by the build script: "" for pages that
+         live at the repo root (publications.html), "../" for pages one
+         folder deep (articles/<slug>.html) — every relative link/asset
+         path below goes through it so this ONE partial works at either
+         depth. -->
+    <header class="site-header">
+      <a href="{{BASE}}index.html" class="nav__logo">
+        <img src="{{BASE}}assets/images/Logo.png" alt="Word for Word logo" />
+      </a>
+      <nav class="nav">
+        <ul class="nav__links">
+          <li><a href="{{BASE}}index.html">Overview</a></li>
+          <li class="nav__item--publications">
+            <a href="{{BASE}}publications.html">Publications*</a>
+            <div class="nav__dropdown">
+              <a href="{{BASE}}index.html#publications"><span class="nav__dropdown-asterisk">*</span>Editions</a>
+              <a href="{{BASE}}publications.html#interviews"><span class="nav__dropdown-asterisk">*</span>Interviews</a>
+              <a href="{{BASE}}publications.html#essays"><span class="nav__dropdown-asterisk">*</span>Essays</a>
+              <a href="{{BASE}}publications.html#narratives"><span class="nav__dropdown-asterisk">*</span>Narratives</a>
+              <a href="{{BASE}}publications.html#outreach"><span class="nav__dropdown-asterisk">*</span>Outreach</a>
+            </div>
+          </li>
+          <li><a href="{{BASE}}about.html">About Us</a></li>
+          <li><a href="{{BASE}}get-involved.html">Get Involved</a></li>
+          <li class="nav__indicator-slot" aria-hidden="true"><span class="nav__indicator"></span></li>
+        </ul>
+      </nav>
+    </header>
+    <div class="nav-dim-overlay" aria-hidden="true"></div>

@@ -1,0 +1,59 @@
+backend:
+  name: github
+  repo: Word-for-Word/wordforword
+  branch: main
+  # The OAuth helper (see ~/Desktop/word-for-word-cms-auth, deployed as
+  # the "word-for-word-cms-auth" Cloudflare Worker) that handles GitHub
+  # login — GitHub Pages can't run server code itself to do this directly.
+  base_url: https://word-for-word-cms-auth.word-for-word.workers.dev
+  auth_endpoint: auth
+
+# No leading slash — these are plain repo-root-relative paths, matching
+# what scripts/build_articles.py expects in each article's `illustration`
+# field (see that script's build_article()). A leading slash would
+# resolve from the DOMAIN root, which breaks on GitHub Pages "project"
+# sites (served under /wordforword/, not the bare domain) — a relative
+# path works the same regardless of where the site is actually deployed.
+media_folder: "assets/images/articles"
+public_folder: "assets/images/articles"
+
+collections:
+  - name: "articles"
+    label: "Articles"
+    folder: "content/articles"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - label: "Category"
+        name: "category"
+        widget: "select"
+        options:
+          - { label: "Interviews", value: "interviews" }
+          - { label: "Essays", value: "essays" }
+          - { label: "Narratives", value: "narratives" }
+          - { label: "Outreach", value: "outreach" }
+      - { label: "Date", name: "date", widget: "date", format: "YYYY-MM-DD" }
+      - { label: "Author", name: "author", widget: "string" }
+      - { label: "Editor", name: "editor", widget: "string" }
+      - { label: "Designer", name: "designer", widget: "string" }
+      - label: "Summary"
+        name: "summary"
+        widget: "text"
+        hint: "One or two sentences — shown on the Publications listing page."
+      - { label: "Illustration", name: "illustration", widget: "image" }
+      - { label: "Illustration alt text", name: "illustration_alt", widget: "string", required: false, hint: "Describes the image for screen readers." }
+      - { label: "Illustration caption", name: "illustration_caption", widget: "string", required: false }
+      - label: "Body"
+        name: "body"
+        widget: "markdown"
+        # Keeps contributors inside the subset scripts/build_articles.py
+        # actually knows how to render (paragraphs, bold, italic, links,
+        # blockquotes, headers, bullet lists) — anything else typed in
+        # raw-markdown mode would render as plain text rather than
+        # breaking the build, but staying in this toolbar avoids that
+        # surprise entirely.
+        buttons: ["bold", "italic", "link", "quote", "bulleted-list"]
+        editor_components: []
