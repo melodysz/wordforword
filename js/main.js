@@ -46,7 +46,45 @@ document.addEventListener("DOMContentLoaded", () => {
   initRoleTapReveal();
   initSocialCarousel();
   initCarouselReveal();
+  initLogoSecretEntry();
 });
+
+// Unadvertised entry point to the Decap CMS admin panel for club members —
+// triple-clicking the nav logo opens it in a new tab, instead of the
+// logo's own single-click "go home" behavior. Every click is intercepted
+// (not just the 3rd) rather than relying on the native click event's own
+// `detail` count: letting the 1st click's default <a href> navigation
+// fire immediately would leave the current page before a 2nd/3rd click
+// could ever be counted, especially on any page other than the homepage
+// itself. Reimplementing "go home" ourselves after a short window with
+// fewer than 3 clicks keeps ordinary single/double clicks behaving
+// exactly as before.
+function initLogoSecretEntry() {
+  const logo = document.querySelector(".nav__logo");
+  if (!logo) return;
+
+  const homeHref = logo.getAttribute("href");
+  const CLICK_WINDOW_MS = 500;
+  let clickCount = 0;
+  let resetTimer = null;
+
+  logo.addEventListener("click", (e) => {
+    e.preventDefault();
+    clickCount++;
+    clearTimeout(resetTimer);
+
+    if (clickCount >= 3) {
+      clickCount = 0;
+      window.open(`${ASSET_BASE}admin/`, "_blank");
+      return;
+    }
+
+    resetTimer = setTimeout(() => {
+      clickCount = 0;
+      window.location.href = homeHref;
+    }, CLICK_WINDOW_MS);
+  });
+}
 
 // vertical-align: middle centers an inline-block box against the
 // font's X-HEIGHT (baseline + half the lowercase-letter height) — not
