@@ -2594,7 +2594,17 @@ span.split-cta__text-line {
 .quote-block,
 .publication-card {
   opacity: 0;
-  transition: opacity 0.7s ease-out;
+  /* filter here too — only .square ever actually changes that property
+     (its own hover-leave brightness reset, see .square's base rule),
+     so this is a harmless no-op for the other selectors in this list.
+     Without it, THIS rule's own `transition` shorthand (equal
+     specificity to .square's base rule, declared later here) silently
+     discarded that rule's `transition: filter 0.3s ease-out;` outright
+     instead of adding to it — same class of bug hit repeatedly
+     elsewhere in this file — leaving hover with NO filter transition
+     applicable at all outside of :hover itself, so brightness snapped
+     back instantly instead of easing out. */
+  transition: opacity 0.7s ease-out, filter 0.3s ease-out;
   /* Always instant when LEAVING .is-visible (whichever direction that
      represents — see .image-mosaic__mask's inverted case below); the
      staggered --reveal-delay only applies while ENTERING it (see the
@@ -2602,8 +2612,11 @@ span.split-cta__text-line {
      the hero's scroll-linked exit fix: a delay that also applies when
      leaving .is-visible can get caught by a fast scroll reversal before
      it's even started, leaving a stale partial opacity for the next
-     transition to wrongly continue from instead of a clean value. */
-  transition-delay: 0s;
+     transition to wrongly continue from instead of a clean value.
+     Second 0s is filter's own delay — always immediate, never tied to
+     the reveal stagger (see the .is-visible-scoped rule's own comment
+     for why that stays true even once .is-visible is added). */
+  transition-delay: 0s, 0s;
 }
 .square.is-visible,
 .split-cta__illustration-tile.is-visible,
@@ -2611,7 +2624,14 @@ span.split-cta__text-line {
 .social-carousel__mask.is-visible,
 .quote-block.is-visible,
 .publication-card.is-visible {
-  transition-delay: var(--reveal-delay, 0ms);
+  /* Second value pins filter's delay to 0s even once .is-visible is
+     present — transition-delay lists repeat cyclically to match
+     transition-property's count when there are fewer values than
+     properties, so a single value here would otherwise apply the
+     opacity-reveal's OWN stagger to hover-leave brightness too, adding
+     a stale, unwanted delay to an interaction that has nothing to do
+     with the tile's one-time scroll-reveal. */
+  transition-delay: var(--reveal-delay, 0ms), 0s;
 }
 .is-visible {
   opacity: 1;
