@@ -130,7 +130,7 @@ body {
      still available for anything that explicitly asks for them (e.g.
      none currently). */
   font-weight: 300;
-  line-height: 1.5;
+  line-height: 1.4;
   padding: var(--page-margin);
   overscroll-behavior-y: none;
 }
