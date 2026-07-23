@@ -65,9 +65,10 @@
   --hero-asterisk-size: clamp(28.6px, 2.86vw, 49.4px);
 }
 
-/* Newsreader (swapped in for the formerly self-hosted, non-web-licensed
-   Freight Text Pro — see the Kapakana @font-face below for the same
-   reasoning). Both files are the real variable fonts (wght 200-800,
+/* Newsreader (swapped in for a previously self-hosted font whose
+   license didn't actually cover web serving — see the Kapakana
+   @font-face below for the same reasoning). Both files are the real
+   variable fonts (wght 200-800,
    plus an opsz axis left on its automatic default), not static
    instances, so one upright + one italic file covers every weight the
    site uses — 300 (body default), 400, 700, and the splash caption's
@@ -1494,8 +1495,8 @@ main {
    see body's own font-weight in :root) rather than the 400 all the
    other roles use — explicitly requested lighter than the rest. */
 .square__role--caps { text-transform: uppercase; font-weight: 300; }
-/* Kapakana (swapped in for the formerly self-hosted, non-OFL Bickham
-   Script Pro) still reads smaller than the other 3 roles' fonts at the
+/* Kapakana (swapped in for a previously self-hosted, non-OFL script
+   font) still reads smaller than the other 3 roles' fonts at the
    same nominal size (compact cursive strokes vs. serif) — bumped past
    the shared body size to compensate, and further still past THAT so
    Designer reads deliberately a bit bigger than its 3 siblings, not
