@@ -290,7 +290,7 @@ function centerMarqueeTracks() {
 
 function initMarqueeCentering() {
   centerMarqueeTracks();
-  // Re-measure once the real webfonts (Freight/Instrument/Bickham) are
+  // Re-measure once the real webfonts (Freight/Instrument/Kapakana) are
   // actually in — same fallback-vs-real-font reflow reasoning as
   // positionHeroAsterisk.
   document.fonts.ready.then(centerMarqueeTracks);

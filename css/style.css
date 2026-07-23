@@ -101,8 +101,8 @@
   font-style: italic;
 }
 @font-face {
-  font-family: "Bickham Script Pro";
-  src: url("../assets/Bickham Script Pro Regular.ttf") format("truetype");
+  font-family: "Kapakana";
+  src: url("../assets/Kapakana-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
 }
@@ -1492,8 +1492,8 @@ main {
      untouched, still --text-body, per the same request. */
   font-size: var(--marquee-text-size);
   /* <h3> is bold by default in the browser's own UA stylesheet — left
-     unset, every role rendered bold (worst on Instrument Serif/Bickham
-     Script Pro, neither of which has a real bold face loaded, so the
+     unset, every role rendered bold (worst on Instrument Serif/Kapakana,
+     neither of which has a real bold face loaded, so the
      browser was synthetically/faux-bolding them, which looks chunky and
      wrong on a script face especially). */
   font-weight: 400;
@@ -1507,19 +1507,20 @@ main {
    see body's own font-weight in :root) rather than the 400 all the
    other roles use — explicitly requested lighter than the rest. */
 .square__role--caps { text-transform: uppercase; font-weight: 300; }
-/* Bickham Script Pro reads noticeably smaller than the other 3 roles'
-   fonts at the same nominal size (thin, compact cursive strokes vs.
-   serif) — bumped past the shared body size to compensate, and further
-   still past THAT so Designer reads deliberately a bit bigger than its
-   3 siblings, not just corrected up to parity with them.
-   calc(var(--marquee-text-size) * 1.6), not 1.6em — em on font-size
+/* Kapakana (swapped in for the formerly self-hosted, non-OFL Bickham
+   Script Pro) still reads smaller than the other 3 roles' fonts at the
+   same nominal size (compact cursive strokes vs. serif) — bumped past
+   the shared body size to compensate, and further still past THAT so
+   Designer reads deliberately a bit bigger than its 3 siblings, not
+   just corrected up to parity with them.
+   calc(var(--marquee-text-size) * 1.75), not 1.75em — em on font-size
    resolves against the PARENT's font-size, not against .square__role's
    own value on this SAME element (only one font-size declaration ever
-   wins the cascade; em doesn't stack with it), so 1.6em silently stayed
+   wins the cascade; em doesn't stack with it), so 1.75em silently stayed
    locked to the old body-text size even after .square__role above was
-   bumped to --marquee-text-size. This keeps the same 1.6x ratio but
+   bumped to --marquee-text-size. This keeps the same 1.75x ratio but
    chained off the value that's actually meant to scale it. */
-.square__role--script { font-family: "Bickham Script Pro", cursive; font-size: calc(var(--marquee-text-size) * 1.6); }
+.square__role--script { font-family: "Kapakana", cursive; font-size: calc(var(--marquee-text-size) * 1.75); }
 
 /* Roles grid hover reveal (squares 1-4: Interviewer/Columnist/Editor/
    Designer) — the role name slides up and fades away as its description
@@ -2396,7 +2397,7 @@ a.diamond-cta {
    .marquee-banner instance site-wide (get-involved, publications, and
    the 4 build_articles.py-generated category strips on publications.html
    — interviews/essays/narratives/outreach). Every instance's markup
-   cycles the same 3 faces per word — Bickham Script, Instrument Serif,
+   cycles the same 3 faces per word — Kapakana, Instrument Serif,
    Freight Text Book (only Freight rendered in caps) — see the HTML
    comment above #get-involved's own track in index.html for the
    word-span structure this relies on, buildMarqueeCycle() in
@@ -2447,10 +2448,10 @@ a.diamond-cta {
   letter-spacing: normal;
 }
 .marquee-banner__word--script {
-  font-family: "Bickham Script Pro", cursive;
-  /* 1.5x the track's own size (Bickham reading thin/small next to the
-     other 2 faces at equal size otherwise). */
-  font-size: calc(var(--marquee-text-size) * 1.5);
+  font-family: "Kapakana", cursive;
+  /* 1.65x the track's own size (Kapakana still reading a bit thin/small
+     next to the other 2 faces at equal size otherwise). */
+  font-size: calc(var(--marquee-text-size) * 1.65);
 }
 .marquee-banner__word--caps {
   font-family: var(--font-body);
