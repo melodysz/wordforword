@@ -1513,14 +1513,14 @@ main {
    the shared body size to compensate, and further still past THAT so
    Designer reads deliberately a bit bigger than its 3 siblings, not
    just corrected up to parity with them.
-   calc(var(--marquee-text-size) * 1.75), not 1.75em — em on font-size
+   calc(var(--marquee-text-size) * 1.65), not 1.65em — em on font-size
    resolves against the PARENT's font-size, not against .square__role's
    own value on this SAME element (only one font-size declaration ever
-   wins the cascade; em doesn't stack with it), so 1.75em silently stayed
+   wins the cascade; em doesn't stack with it), so 1.65em silently stayed
    locked to the old body-text size even after .square__role above was
-   bumped to --marquee-text-size. This keeps the same 1.75x ratio but
+   bumped to --marquee-text-size. This keeps the same 1.65x ratio but
    chained off the value that's actually meant to scale it. */
-.square__role--script { font-family: "Kapakana", cursive; font-size: calc(var(--marquee-text-size) * 1.75); }
+.square__role--script { font-family: "Kapakana", cursive; font-size: calc(var(--marquee-text-size) * 1.65); }
 
 /* Roles grid hover reveal (squares 1-4: Interviewer/Columnist/Editor/
    Designer) — the role name slides up and fades away as its description
@@ -2449,9 +2449,9 @@ a.diamond-cta {
 }
 .marquee-banner__word--script {
   font-family: "Kapakana", cursive;
-  /* 1.65x the track's own size (Kapakana still reading a bit thin/small
+  /* 1.55x the track's own size (Kapakana still reading a bit thin/small
      next to the other 2 faces at equal size otherwise). */
-  font-size: calc(var(--marquee-text-size) * 1.65);
+  font-size: calc(var(--marquee-text-size) * 1.55);
 }
 .marquee-banner__word--caps {
   font-family: var(--font-body);
